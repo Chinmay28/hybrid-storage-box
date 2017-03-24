@@ -1,0 +1,37 @@
+Cache
+Ranks (higher the rank, it moves to faster medium):
+
+Frequency - MFU
+Timestamp - most recently used - 
+On ties only - size
+Frequency threshold - 500, simulate it using a lower value - config file
+
+Notes:
+Reset frequency when you move data
+When a file in ssd has a frequency of 0 and has not been used in the near past, move to hdd
+Each entry has a flag stating where it is stored currently
+Try to keep SSDs fully filled (appropriate data only)
+Files can move up by only one rank, i.e., Sc1 (4), St1 (3), Gp2(2), io1 (1)
+Down rank - 1 to 3 or 2 to 3 or 3 to 4
+Cleanup daemon will generate events if SSD drives are underutilized. Whereas, it will always try to clean up HDDs.
+
+Rough draft of mover daemon
+Get up periodically
+Query for top 5 most frequently used and move then to proper volume
+Make frequency counter 0.
+
+Cleanup draft daemon 
+If file is not used for a long time (fixed threshold of 1 day) , move to HDD if file is in SSD, else if frequency is below threshold - 50, move to cold HDD.
+If file is not used for very long (2days), irrespective of frequency, move the file to lower rank.
+
+Move when no space in SSD
+For each file to be moved,
+Get all least used files whose size adds to required size and their frequency is less that the files frequency.
+Example: - Move HDD1 top 3 to Sdd1
+
+SDD1	SDD2	HDD1	HDD2
+-------------------------------------
+1300	400	900	100
+1200	250	800	50
+199	100	600
+100	50
