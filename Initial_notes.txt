@@ -1,0 +1,75 @@
+
+Workflow	AWS Offering	Details	Examples	Cost- 50GB, 150 IOPS
+
+Default	EBS - GP2	May be file type	
+      • Recommended for most workloads	$2/month, 1st yr
+			• System boot volumes	$5/month, 2nd yr
+			• Virtual desktops	128 MBps
+			• Low-latency interactive apps
+			• Development and test environments
+Highest-performance SSD volume designed for mission-critical applications	EBS - io1	?	• Critical business applications that require sustained IOPS performance, or more than 10,000 IOPS or 160 MiB/s of throughput per volume	$16/month
+			• Large database workloads, such as:	37.5MBps
+			        ○ MongoDB
+			        ○ Cassandra
+			        ○ Microsoft SQL Server
+			        ○ MySQL
+			        ○ PostgreSQL
+			        ○ Oracle
+Frequently accessed, throughput-intensive workloads	St1	?	• Streaming workloads requiring consistent, fast throughput at a low price	Min 500 GB
+			• Big data	$22.50/month
+			• Data warehouses	19.5 MBps
+			• Log processing	IOPS don’t matter
+			• Cannot be a boot volume
+Less frequently accessed workloads	Sc1	?	• Throughput-oriented storage for large volumes of data that is infrequently accessed	Min 500 GB$12.50
+			• Scenarios where the lowest storage cost is important	5.8MBps
+			• Cannot be a boot volume	IOPS don’t matter
+Read only	S3	?	Movies, Videos, Music, Photos, CDN	500GB10k puts13M gets$19.75/Month
+
+
+
+
+TYPE	Standard Storage
+S3 - First 50 TB / month	$0.023 per GB
+EBS - gp2	$0.10 per GB
+EBS - io1	$0.125 per GB, $0.065 per provisioned IOPS
+EBS - st1	$0.045 per GB
+EBS - sc1	$0.025 per GB
+
+
+Calculator - https://aws.amazon.com/s3/pricing/
+
+
+
+Stats collected
+	1. File type usage pattern
+	2. Most used files (above threshold)
+	3. Usage pattern based on time
+	4. Workload expected vs observed
+	5. Data size per day bases
+	6. Upload vs download size/frequency
+	7. Storage usage over time
+	8. Number of failures
+	9. CRUD frequencies
+
+
+
+
+
+
+Policies
+
+	1. File type storage
+		a. Media (Audio/Video) - GP2
+		.aif,.cda,.mid,.mp3,.mpa,.ogg,.wav,.wma,.wpl,.3g2,.3gp,.avi,.flv,.h264,.m4v,.mkv,.mov,.mp4,.mpg,.rm ,.swf,.vob,.wmv
+		b. Compresses files and disk images - Sc1
+		.7z ,.arj,.deb,.pkg,.rar,.rpm,.tar,.z ,.zip,.bin,.dmg,.iso,.toast,.vcd
+		c. DB files - io1/St1
+		.csv,.dat,.db ,.log,.mdb,.sav,.sql,.xml,.tar
+		d. Executables - io1/St1
+		.apk,.bat,.bin,.cgi,.com,.exe,.gadget,.jar,.py,.wsf 
+		e. Image files St1
+		.ai ,.bmp,.gif,.ico,.jpe,.png,.ps ,.psd,.svg,.tif
+		f. Documents - St1
+		.key ,.odp ,.pps ,.ppt ,.pptx,.c,C,.class,.cpp,.cs,.h,.java ,.sh ,.swift,.vb,.py,.ods,.xlr,.xls,xlsx,.doc,.odt,.pdf,.rtf,.tex,.txt,.wks,.wpd, .docx
+			
+	2. Frequency counters get reset when data gets moved.
