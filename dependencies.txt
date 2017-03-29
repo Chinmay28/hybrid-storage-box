@@ -1,0 +1,10 @@
+
+Postgres for ubuntu:
+https://tecadmin.net/install-postgresql-server-on-ubuntu/
+
+For adding local user for db access
+https://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html
+
+Psyco (AKA Sweekrut) pg2:
+http://initd.org/psycopg/docs/cursor.html
+
