@@ -6,17 +6,22 @@ import os
 import sys
 import errno
 
+from collections import defaultdict
 from fuse import FUSE, FuseOSError, Operations
 from Util import DBUtil
 import uuid
 import time
 import pprint
+import threading
 
 
 class Passthrough(Operations):
     def __init__(self, root):
         self.root = root
         self.db_conn = DBUtil()
+        self.file_access_count = defaultdict(lambda:1)
+        self.file_write_count = defaultdict(lambda:1)
+        self.file_lock = defaultdict(threading.RLock)
 
     # Helpers
     # =======
@@ -29,28 +34,32 @@ class Passthrough(Operations):
 
     # Filesystem methods
     # ==================
-
+	
     def access(self, path, mode):
         full_path = self._full_path(path)
-        print("CHINMAY: access")
+        print("LOG: access")
         if not os.access(full_path, mode):
             raise FuseOSError(errno.EACCES)
 
     def chmod(self, path, mode):
+        print("LOG: chmod")
         full_path = self._full_path(path)
         return os.chmod(full_path, mode)
 
     def chown(self, path, uid, gid):
+        print("LOG: chown")
         full_path = self._full_path(path)
         return os.chown(full_path, uid, gid)
 
     def getattr(self, path, fh=None):
+        print("LOG: getattr")
         full_path = self._full_path(path)
         st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
     def readdir(self, path, fh):
+        print("LOG: readdir")
         full_path = self._full_path(path)
 
         dirents = ['.', '..']
@@ -60,6 +69,7 @@ class Passthrough(Operations):
             yield r
 
     def readlink(self, path):
+        print("LOG: readlink")
         pathname = os.readlink(self._full_path(path))
         if pathname.startswith("/"):
             # Path name is absolute, sanitize it.
@@ -68,16 +78,20 @@ class Passthrough(Operations):
             return pathname
 
     def mknod(self, path, mode, dev):
+        print("LOG: mknode")
         return os.mknod(self._full_path(path), mode, dev)
 
     def rmdir(self, path):
+        print("LOG: rmdir")
         full_path = self._full_path(path)
         return os.rmdir(full_path)
 
     def mkdir(self, path, mode):
+        print("LOG: mkdir")
         return os.mkdir(self._full_path(path), mode)
 
     def statfs(self, path):
+        print("LOG: statfs")
         full_path = self._full_path(path)
         stv = os.statvfs(full_path)
         return dict((key, getattr(stv, key)) for key in ('f_bavail', 'f_bfree',
@@ -85,18 +99,27 @@ class Passthrough(Operations):
             'f_frsize', 'f_namemax'))
 
     def unlink(self, path):
+        print("LOG: unlink")
         return os.unlink(self._full_path(path))
 
     def symlink(self, name, target):
+        print("LOG: symlink")
         return os.symlink(name, self._full_path(target))
 
     def rename(self, old, new):
-        return os.rename(self._full_path(old), self._full_path(new))
+        print("LOG: rename")
+        lock = self.file_lock[self._full_path(old)]
+        lock.acquire()
+        retval = os.rename(self._full_path(old), self._full_path(new))
+        lock.release()
+        return retval
 
     def link(self, target, name):
+        print("LOG: link")
         return os.link(self._full_path(target), self._full_path(name))
 
     def utimens(self, path, times=None):
+        print("LOG: utimes")
         return os.utime(self._full_path(path), times)
 
     # File methods
@@ -104,54 +127,74 @@ class Passthrough(Operations):
 
     def open(self, path, flags):
         full_path = self._full_path(path)
+        print("LOG: open ", full_path)
+        #Increment access count
+        #self.file_access_count[full_path] += 1
+        #take lock
+        lock = self.file_lock[full_path]
+        lock.acquire()
         return os.open(full_path, flags)
 
     def create(self, path, mode, fi=None):
         full_path = self._full_path(path)
+        lock = self.file_lock[full_path]
+        lock.acquire()
         print("LOG create(): ", full_path)
         file_id = str(uuid.uuid1())
         last_update_time = last_move_time = create_time = str(time.time())
         access_count = write_count = "1"
         volume_info = "hdd_hot"
-        file_tag = "tada!"
 
         query = "insert into file_meta values( \'" + file_id+"\', \'" \
         + full_path+"\', \'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
-        +"\', \'" + access_count+"\', \'" + write_count+"\', \'" + volume_info+"\', \'" + file_tag+"\');" 
+        +"\', \'" + access_count+"\', \'" + write_count+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
 
         print("LOG executing: ", query)
         self.db_conn.insert(query)
-        pprint.pprint(self.db_conn.query("select * from file_meta;"))
+
+        self.file_access_count[full_path] += 1
+
+        #pprint.pprint(self.db_conn.query("select * from file_meta;"))
 
         return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
 
     def read(self, path, length, offset, fh):
+        print("LOG: read ", path)
         os.lseek(fh, offset, os.SEEK_SET)
+        self.file_access_count[self._full_path(path)] += 1
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
+        print("LOG: write ", self._full_path(path))
         os.lseek(fh, offset, os.SEEK_SET)
+        self.file_access_count[self._full_path(path)] += 1
+        self.file_write_count[self._full_path(path)] += 1
         return os.write(fh, buf)
 
     def truncate(self, path, length, fh=None):
+        print("LOG: truncate ", path)
         full_path = self._full_path(path)
         with open(full_path, 'r+') as f:
             f.truncate(length)
 
     def flush(self, path, fh):
+        print("LOG: flush ", path)
         return os.fsync(fh)
 
     def release(self, path, fh):
+        print("LOG: release ", path)
+        lock = self.file_lock[self._full_path(path)]
+        lock.release()
         return os.close(fh)
 
     def fsync(self, path, fdatasync, fh):
+        print("LOG: fsync ", path)
         return self.flush(path, fh)
 
 
 def main(mountpoint, root):
     FUSE(Passthrough(root), mountpoint, nothreads=True, foreground=True)
 
-    
+
 if __name__ == '__main__':
     main(sys.argv[2], sys.argv[1])
-    
