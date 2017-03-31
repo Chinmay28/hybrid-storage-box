@@ -1,6 +1,8 @@
 import psycopg2
 import sys
 import os
+from collections import namedtuple
+
 
 class DBUtil(object):
 
@@ -26,3 +28,17 @@ class DBUtil(object):
 	def __del__(self):
 		self.connnection.commit()
 		self.connnection.close()
+
+
+
+class DiskUtil(object):
+
+	@staticmethod
+	def get_available_space(path):
+	    """
+		http://stackoverflow.com/questions/787776/find-free-disk-space-in-python-on-os-x
+	    """
+	    st = os.statvfs(path)
+	    return st.f_bavail * st.f_frsize
+	    
+
