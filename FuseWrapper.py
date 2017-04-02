@@ -13,15 +13,43 @@ import uuid
 import time
 import pprint
 import threading
+import thread
+import time
 
+#DB update thread
+def WriteToDB(classobj, sleeptime):
+    while True:
+        #Wake up every sleeptime seconds
+        time.sleep(sleeptime)
+        print("Writing file counts to DB (one by one)")
+        #Write to DB only if any dictionary is not empty
+        if len(classobj.file_access_count) > 0 or len(classobj.file_write_count) > 0:
+            #loop on all file locks
+            for path in classobj.file_lock:
+                lock = classobj.file_lock[path]
+                lock.acquire()
+                #only write if atleast one count is non zero. (This condition should not occur)
+                if classobj.file_access_count[path] > 0 or classobj.file_write_count[path] > 0:
+                    #write to DB
+                    update_query = "update file_meta set access_count=\'" + str(classobj.file_access_count[path])+"\', write_count=\'" \
+                    + str(classobj.file_write_count[path])+"\' where file_path=\'" + path+ "\';"
+                    #print ("Updated", update_query)
+                    classobj.db_conn.insert(update_query)
+                
+                lock.release()
+            #Clear both count dictionaries. Note that we dont need to clear lock dictionary.
+            classobj.file_access_count.clear()
+            classobj.file_write_count.clear()
 
 class Passthrough(Operations):
     def __init__(self, root):
         self.root = root
         self.db_conn = DBUtil()
-        self.file_access_count = defaultdict(lambda:1)
-        self.file_write_count = defaultdict(lambda:1)
+        self.file_access_count = defaultdict(lambda:0)
+        self.file_write_count = defaultdict(lambda:0)
         self.file_lock = defaultdict(threading.RLock)
+        #Start DB update thread. Pass self pointer and sleep time.
+        thread.start_new_thread(WriteToDB, (self, 10))
 
     # Helpers
     # =======
@@ -34,7 +62,7 @@ class Passthrough(Operations):
 
     # Filesystem methods
     # ==================
-	
+
     def access(self, path, mode):
         full_path = self._full_path(path)
         print("LOG: access")
@@ -108,9 +136,12 @@ class Passthrough(Operations):
 
     def rename(self, old, new):
         print("LOG: rename")
+        
+        #Aquire lock so that policy thread wont interfere
         lock = self.file_lock[self._full_path(old)]
         lock.acquire()
         retval = os.rename(self._full_path(old), self._full_path(new))
+        #unlick now
         lock.release()
         return retval
 
@@ -128,32 +159,37 @@ class Passthrough(Operations):
     def open(self, path, flags):
         full_path = self._full_path(path)
         print("LOG: open ", full_path)
-        #Increment access count
-        #self.file_access_count[full_path] += 1
-        #take lock
+        #Aquire lock so that policy thread wont interfere. Unlock in release method
         lock = self.file_lock[full_path]
         lock.acquire()
         return os.open(full_path, flags)
 
     def create(self, path, mode, fi=None):
         full_path = self._full_path(path)
+        #Aquire lock so that policy thread wont interfere. Unlock in release method
         lock = self.file_lock[full_path]
         lock.acquire()
+        
         print("LOG create(): ", full_path)
+        
+        #Prepare query
         file_id = str(uuid.uuid1())
         last_update_time = last_move_time = create_time = str(time.time())
         access_count = write_count = "1"
         volume_info = "hdd_hot"
+        file_tag = "tada!"
 
         query = "insert into file_meta values( \'" + file_id+"\', \'" \
         + full_path+"\', \'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
-        +"\', \'" + access_count+"\', \'" + write_count+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
+        +"\', \'" + access_count+"\', \'" + write_count+"\', \'" + volume_info+"\', \'" + file_tag+"\');" 
 
         print("LOG executing: ", query)
         self.db_conn.insert(query)
 
+        #update usage count
         self.file_access_count[full_path] += 1
-
+        self.file_write_count[full_path] += 1
+        
         #pprint.pprint(self.db_conn.query("select * from file_meta;"))
 
         return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
@@ -161,12 +197,14 @@ class Passthrough(Operations):
     def read(self, path, length, offset, fh):
         print("LOG: read ", path)
         os.lseek(fh, offset, os.SEEK_SET)
+        #update read count
         self.file_access_count[self._full_path(path)] += 1
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
         print("LOG: write ", self._full_path(path))
         os.lseek(fh, offset, os.SEEK_SET)
+        #update read and write count
         self.file_access_count[self._full_path(path)] += 1
         self.file_write_count[self._full_path(path)] += 1
         return os.write(fh, buf)
@@ -183,6 +221,7 @@ class Passthrough(Operations):
 
     def release(self, path, fh):
         print("LOG: release ", path)
+        #Unlock the lock taken during open or create.
         lock = self.file_lock[self._full_path(path)]
         lock.release()
         return os.close(fh)
@@ -195,6 +234,7 @@ class Passthrough(Operations):
 def main(mountpoint, root):
     FUSE(Passthrough(root), mountpoint, nothreads=True, foreground=True)
 
-
+    
 if __name__ == '__main__':
     main(sys.argv[2], sys.argv[1])
+    
