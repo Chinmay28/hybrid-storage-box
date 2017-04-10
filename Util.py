@@ -40,8 +40,19 @@ class DBUtil(object):
     
     def __del__(self):
         self.connnection.close()
-        
-        
+
+    def getMatchingFiles(disk_id=None, metric=None):
+        if disk_id and metric:
+            cursor = self.connnection.cursor()
+            cursor.execute("select file_id,volume_info,access_count,write_count,file_size,file_path from file_meta \
+            where disk_id=\'" + disk_id + "\' and access_count < \'" + metric.access + "\' \
+            and write_count < \'" + metric.write + "\';")
+            result = cursor.fetchall()
+            cursor.close()
+            self.connnection.commit()
+            return result
+            
+
     @staticmethod
     def writeToDB(fuseObject, sleeptime):
         while True:

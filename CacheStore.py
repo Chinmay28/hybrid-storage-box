@@ -8,3 +8,4 @@ class FileMeta(object):
     write_count_map = defaultdict(int)
     path_to_uuid_map = defaultdict(int)
     lock_map = defaultdict(threading.RLock)
+    
