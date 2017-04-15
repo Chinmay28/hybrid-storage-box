@@ -30,12 +30,24 @@ class TravelAgent(object):
         else:
             print("We are good! Available:", available, "File size:", os.path.getsize(src_path))
 
+        #Get the file id and take lock
+        file_id = FileMeta.path_to_uuid_map[src_path]
+        lock = FileMeta.lock_map[file_id]
+        lock.acquire()
         # 3. if possible, call copy
         copyfile(src_path, dst_path)
 
-        # 4. call symlink 
+        #Now remove the file as we have already copied it
         os.remove(src_path)
+
+        #But we need to update the path to id map
+        #ThreadIssue: If some other thread tries to access path_to_uuid_map at the same time for the same file then we are dead. Potential solution=one lock for this map.
+        FileMeta.path_to_uuid_map.pop(src_path, None)
+        FileMeta.path_to_uuid_map[dst_path] = file_id
         os.symlink(dst_path, src_path)
+        #TODO: Update the DB entry - change files path from src_path to dst_path
+        #Release lock only after creating symlink and updating db
+        lock.release()
 
     @staticmethod
     def getVictimIter(disk_id, space_to_free, metric):
