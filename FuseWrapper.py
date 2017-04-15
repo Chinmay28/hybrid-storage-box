@@ -105,7 +105,8 @@ class FuseSystem(Operations):
         print("LOG: unlink")
         return os.unlink(self._full_path(path))
 
-    def symlink(self, target, name):
+    # Fuse is crazy. name is link name and target is actual filename
+    def symlink(self, name, target):
         target = self.getrealpath(self._full_path(target))
         print("LOG: symlink", target, self._full_path(name))
         return os.symlink(target, self._full_path(name))
