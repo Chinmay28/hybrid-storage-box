@@ -105,9 +105,10 @@ class FuseSystem(Operations):
         print("LOG: unlink")
         return os.unlink(self._full_path(path))
 
-    def symlink(self, name, target):
-        print("LOG: symlink")
-        return os.symlink(name, self._full_path(target))
+    def symlink(self, target, name):
+        target = self.getrealpath(self._full_path(target))
+        print("LOG: symlink", target, self._full_path(name))
+        return os.symlink(target, self._full_path(name))
 
     def rename(self, old, new):
         print("LOG: rename")
@@ -205,7 +206,6 @@ class FuseSystem(Operations):
         #Unlock the lock taken during open or create.
         lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
         lock.release()
-        return os.close(fh)
 
     def fsync(self, path, fdatasync, fh):
         print("LOG: fsync ", path)
