@@ -8,3 +8,9 @@ https://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html
 Psyco (AKA Sweekrut) pg2:
 http://initd.org/psycopg/docs/cursor.html
 
+
+Create table file_meta ( file_id text not null primary key, File_path text, file_size integer, Create_time text, Last_update_time text, Last_move_time text, Access_count bigint, Write_count bigint, Volume_info text, File_tag text )
+
+ file_id | file_path | file_size | create_time | last_update_time | last_move_time | access_count | write_count | volume_info | file_tag
+---------+-----------+-----------+-------------+------------------+----------------+--------------+-------------+-------------+----------
+(0 rows)
