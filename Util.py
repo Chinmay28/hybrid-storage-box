@@ -14,12 +14,14 @@ class DBUtil(object):
 
     def insert(self, query):
         cursor = self.connnection.cursor()
+        print("executing: "+ query)
         cursor.execute(query)
         cursor.close()
         self.connnection.commit()
 
     def query(self, query):
         cursor = self.connnection.cursor()
+        print("executing: "+ query)
         cursor.execute(query)
         result = cursor.fetchall()
         cursor.close()
@@ -79,8 +81,8 @@ class DBUtil(object):
                         volume_info = "hdd_hot"
                         file_tag = "tada!"
                         query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
-                        + realpath +"\', \'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
-                        +"\', \'" + access_count+"\', \'" + write_count+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
+                        + realpath +"\', \'" + str(os.path.getsize(realpath)) + "\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
+                        +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
                         print("Executing: ", query)
                         fuseObject.db_conn.insert(query)
                         old_counts = [0, 0]
@@ -111,6 +113,7 @@ class DiskUtil(object):
         """
         st = os.statvfs(path)
         return st.f_bavail * st.f_frsize
+
 
 
 if __name__ == "__main__":

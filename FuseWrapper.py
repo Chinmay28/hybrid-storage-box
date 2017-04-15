@@ -158,17 +158,17 @@ class FuseSystem(Operations):
         volume_info = "hdd_hot"
         file_tag = "tada!"
         query = "insert into file_meta values( \'" + file_id+"\', \'" \
-        + self.getrealpath(full_path) +"\', \'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
-        +"\', \'" + access_count+"\', \'" + write_count+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
+        + self.getrealpath(full_path) +"\', \'0\', \'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
+        +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
         self.db_conn.insert(query)
 
+        print("DB update finished.")
         #Add path and uuid to dictionary
         FileMeta.path_to_uuid_map[self.getrealpath(full_path)] = file_id
 
-        #update usage count
+        print("update usage count...")
         FileMeta.access_count_map[file_id] += 1
         FileMeta.write_count_map[file_id] += 1
-
 
         return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
 
