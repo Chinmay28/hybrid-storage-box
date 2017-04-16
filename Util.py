@@ -43,16 +43,51 @@ class DBUtil(object):
     def __del__(self):
         self.connnection.close()
 
-    def getMatchingFiles(disk_id=None, metric=None):
+    def getColdRows(self, disk_id=None, metric=None):
         if disk_id and metric:
             cursor = self.connnection.cursor()
             cursor.execute("select file_id,volume_info,access_count,write_count,file_size,file_path from file_meta \
-            where disk_id=\'" + disk_id + "\' and access_count < \'" + metric.access + "\' \
-            and write_count < \'" + metric.write + "\';")
+            where volume_info=\'" + disk_id + "\' and access_count < \'" + str(metric[0]) + "\' \
+            and write_count < \'" + str(metric[1]) + "\' order by access_count;")
             result = cursor.fetchall()
             cursor.close()
             self.connnection.commit()
             return result
+
+    def getHotRow(self, disk_id=None):
+        if disk_id:
+            query = "select file_path,file_size,access_count,volume_info from file_meta \
+            where volume_info=\'"+disk_id+"\' order by access_count desc limit 1;"
+            print(query)
+            cursor = self.connnection.cursor()
+            cursor.execute(query)
+            result = cursor.fetchone()
+            cursor.close()
+            self.connnection.commit()
+            return result
+
+    def updateFilePath(self, file_id, dst_path):
+         if file_id and dst_path:
+            query = "update file_meta set file_path=\'"+dst_path+"\',\
+            volume_info=\'"+DiskUtil.getDiskId(dst_path)+"\' where file_id=\'"+file_id+"\';"
+            print(query)
+            cursor = self.connnection.cursor()
+            cursor.execute(query)
+            cursor.close()
+            self.connnection.commit()   
+         else:
+            print(file_id, dst_path)       
+
+    def getFileId(self, src_path):
+        if src_path:
+            query = "select file_id from file_meta where file_path=\'"+src_path+"\';"
+            print(query)
+            cursor = self.connnection.cursor()
+            cursor.execute(query)
+            result = cursor.fetchone()
+            cursor.close()
+            self.connnection.commit()
+            return result[0]              
             
 
     @staticmethod
@@ -81,7 +116,7 @@ class DBUtil(object):
                         volume_info = "hdd_hot"
                         file_tag = "tada!"
                         query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
-                        + realpath +"\', \'" + str(os.path.getsize(realpath)) + "\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
+                        + realpath +"\', \'0\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
                         +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
                         print("Executing: ", query)
                         fuseObject.db_conn.insert(query)
@@ -114,7 +149,21 @@ class DiskUtil(object):
         st = os.statvfs(path)
         return st.f_bavail * st.f_frsize
 
+    @staticmethod
+    def getDiskId(path):
+        disk_to_path_map = {
+            "io1" : "/home/cmanjun/src/io1/",
+            "gp2" : "/home/cmanjun/src/gp2/",
+            "st1" : "/home/cmanjun/src/st1/",
+            "sc1" : "/home/cmanjun/src/sc1/" 
+        }
+        for key in disk_to_path_map:
+            if path.startswith(disk_to_path_map[key]):
+                return key
+        return None 
 
 
 if __name__ == "__main__":
-    DBUtil().getCounts("62a1edf4-142b-11e7-a41a-00505608aa24")
+    print(DBUtil().getHotRow("io1"))
+
+
