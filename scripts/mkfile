@@ -1,0 +1,1 @@
+dd if=/dev/zero iflag=count_bytes count="$2" bs=1M of="$1"; sync
