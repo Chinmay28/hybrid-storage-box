@@ -1,7 +1,7 @@
 # Hybrid Storage Box
 
-### Chinmay Manjunath
-### Sweekrut Suhas Joshi
+###### Chinmay Manjunath
+###### Sweekrut Suhas Joshi
 
 ## 1. Introduction
 
