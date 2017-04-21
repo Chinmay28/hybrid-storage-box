@@ -4,7 +4,8 @@ https://tecadmin.net/install-postgresql-server-on-ubuntu/
 
 For adding local user for db access
 https://www.postgresql.org/docs/9.3/static/auth-pg-hba-conf.html
-/etc/postgresql/9.6/main/pg_hba.conf  --> local   all             all                                     trust
+Add first line in below file:
+/etc/postgresql/9.6/main/pg_hba.conf  --> local   all             postgres                                trust
 
 root@ip-172-31-3-110:~# /etc/init.d/postgresql restart
 [ ok ] Restarting postgresql (via systemctl): postgresql.service.
