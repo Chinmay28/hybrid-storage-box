@@ -9,10 +9,11 @@ class FileMeta(object):
     lock_map = defaultdict(threading.RLock)
 
     disk_to_path_map = {
-        "io1" : "./io1",
-        "gp2" : "./gp2",
-        "st1" : "./st1",
-        "sc1" : "./sc1"
+        "io1" : "/mnt/io1",
+        "gp2" : "/mnt/gp2",
+        "st1" : "/mnt/st1",
+        "sc1" : "/mnt/sc1"
     }
 
-    DEFAULT_DISK = "st1"
+    DEFAULT_DISK = "/mnt/st1"
+    USER_DIRECTORY = "/hime/ubuntu/storage_box"
