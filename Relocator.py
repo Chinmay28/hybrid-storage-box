@@ -12,13 +12,6 @@ import shutil
     and all methods are static methods """
 class TravelAgent(object):
 
-    disk_to_path_map = {
-        "io1" : "/home/cmanjun/src/io1/",
-        "gp2" : "/home/cmanjun/src/gp2/",
-        "st1" : "/home/cmanjun/src/st1/",
-        "sc1" : "/home/cmanjun/src/sc1/" 
-    }
-
     def __init__(self):
         pass
 
@@ -48,19 +41,23 @@ class TravelAgent(object):
         # 3. move file
         shutil.move(src_path, dst_path)
 
+        #ThreadIssue: If some other thread tries to access path_to_uuid_map at 
+        #the same time for the same file then we are dead. Potential solution=one lock for this map.
         #But we need to update the path to id map
         FileMeta.path_to_uuid_map.pop(src_path, None)
         DBUtil().updateFilePath(file_id, dst_path)
         FileMeta.path_to_uuid_map[dst_path] = file_id
 
         # Remove the symlink
-        #os.remove(src_path)
+        #get the symlink first
+        symlinkname = src_path.replace(FileMeta.disk_to_path_map[disk_id], FileMeta.USER_DIRECTORY) 
+        symlinkname += '/'
 
-        #ThreadIssue: If some other thread tries to access path_to_uuid_map at 
-        #the same time for the same file then we are dead. Potential solution=one lock for this map.
-        FileMeta.path_to_uuid_map.pop(src_path, None)
-        FileMeta.path_to_uuid_map[dst_path] = file_id
-        os.symlink(dst_path, src_path)
+        os.unlink(real_path)
+        os.symlink(dst_path, symlinkname)
+
+        #os.symlink(dst_path, src_path)
+        
         #Release lock
         lock.release()
 
@@ -101,10 +98,10 @@ class TravelAgent(object):
     @staticmethod
     def getRelocationPath(old_path, new_disk_id):
 
-        for key in TravelAgent.disk_to_path_map:
-            if old_path.startswith(TravelAgent.disk_to_path_map[key]):
-                return old_path.replace(TravelAgent.disk_to_path_map[key], \
-                    TravelAgent.disk_to_path_map[new_disk_id])
+        for key in FileMeta.disk_to_path_map:
+            if old_path.startswith(FileMeta.disk_to_path_map[key]):
+                return old_path.replace(FileMeta.disk_to_path_map[key], \
+                    FileMeta.disk_to_path_map[new_disk_id])
 
         return None
 
@@ -117,6 +114,8 @@ class TravelAgent(object):
         while True:
             time.sleep(frequency)
 
+            #We will never move any thing from io1 in this daemon.
+            #Files will only move out of it during clean up
             for disk in disk_list[1:]:
                 row = DBUtil().getHotRow(disk)
                 if not row:
@@ -129,7 +128,3 @@ class TravelAgent(object):
 
 if __name__ == "__main__":
     TravelAgent.runDaemon()
-
-
-
-
