@@ -11,10 +11,10 @@ We present a hybrid storage box that abstracts different storage media in it and
 
 Many enterprise storage companies are already involved in research and development in this area.
 Examples:
-Nimble Storage’s adaptive flash array
-Tegile’s hybrid array 
-Pure Storage’s Hybrid solution
-Microsoft’s hybrid cloud
-Netapp’s Data Fabric
+1. Nimble Storage’s adaptive flash array
+2. Tegile’s hybrid array 
+3. Pure Storage’s Hybrid solution
+4. Microsoft’s hybrid cloud
+5. Netapp’s Data Fabric
 
 We want to build an open source prototype that can be extended in the future to have the features an enterprise offering might have. 
