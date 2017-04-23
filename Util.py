@@ -87,7 +87,16 @@ class DBUtil(object):
             result = cursor.fetchone()
             cursor.close()
             self.connnection.commit()
-            return result[0]              
+            return result[0]      
+
+    def removeStaleEntry(src_path):
+        if src_path:
+            query = "delete from file_meta where file_path=\'"+src_path+"\';"
+            print(query)
+            cursor = self.connnection.cursor()
+            cursor.execute(query)
+            cursor.close()
+            self.connnection.commit()           
             
 
     @staticmethod

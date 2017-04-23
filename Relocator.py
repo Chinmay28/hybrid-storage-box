@@ -19,7 +19,7 @@ class TravelAgent(object):
     def relocateFile(disk_id, src_path, dst_path, metric):
         if not os.path.exists(src_path):
             print("How did we reach here?")
-            # TODO clean stale DB entry!
+            DBUtil().removeStaleEntry(src_path)
             return
 
         # 1. check if dst has enough space
@@ -27,7 +27,9 @@ class TravelAgent(object):
         if available <= os.path.getsize(src_path):
             print("Available:", available, "File size:", os.path.getsize(src_path))
             # not enough space! Free diff+1024 (just a number)
-            TravelAgent.cleanupDisk(disk_id, os.path.getsize(src_path) - available + 1024, metric)
+            status = TravelAgent.cleanupDisk(disk_id, os.path.getsize(src_path) - available + 1024, metric)
+            if status is None:
+                return None
         else:
             print("We are good! Available:", available, "File size:", os.path.getsize(src_path))
 
@@ -60,6 +62,8 @@ class TravelAgent(object):
         
         #Release lock
         lock.release()
+        return 0
+
 
     @staticmethod
     def getVictimIter(disk_id, space_to_free, metric):
@@ -90,6 +94,8 @@ class TravelAgent(object):
                 return None
 
             dst_path = TravelAgent.getRelocationPath(src_path, new_disk_id)
+            if dst_path is None:
+                return None
             TravelAgent.relocateFile(disk_id, src_path, dst_path, metric)
 
             return 0
@@ -121,9 +127,13 @@ class TravelAgent(object):
                 if not row:
                     continue
                 print("Row to relocate: ", row)
-                TravelAgent.relocateFile(disk, row[0], TravelAgent.getRelocationPath(row[0], \
+                status = TravelAgent.relocateFile(disk, row[0], TravelAgent.getRelocationPath(row[0], \
                     disk_list[disk_list.index(disk)-1]), row[2])
-
+                if status is None:
+                    print("Daemon is vetoed. Abort!")
+                    break
+            else:
+                break
 
 
 if __name__ == "__main__":
