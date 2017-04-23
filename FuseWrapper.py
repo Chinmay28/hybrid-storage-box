@@ -256,5 +256,7 @@ def main(mountpoint, root):
 
 
 if __name__ == '__main__':
+    FileMeta.USER_DIRECTORY = os.path.realpath(sys.argv[1])
     main(sys.argv[2], sys.argv[1])
+
  

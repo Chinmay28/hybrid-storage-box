@@ -16,4 +16,4 @@ class FileMeta(object):
     }
 
     DEFAULT_DISK = "st1"
-    USER_DIRECTORY = "/hime/ubuntu/storage_box"
+    USER_DIRECTORY = "" # is set by FuseWrapper

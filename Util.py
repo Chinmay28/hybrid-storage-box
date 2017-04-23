@@ -89,7 +89,7 @@ class DBUtil(object):
             self.connnection.commit()
             return result[0]      
 
-    def removeStaleEntry(src_path):
+    def removeStaleEntry(self, src_path):
         if src_path:
             query = "delete from file_meta where file_path=\'"+src_path+"\';"
             print(query)
@@ -160,14 +160,8 @@ class DiskUtil(object):
 
     @staticmethod
     def getDiskId(path):
-        disk_to_path_map = {
-            "io1" : "/home/cmanjun/src/io1/",
-            "gp2" : "/home/cmanjun/src/gp2/",
-            "st1" : "/home/cmanjun/src/st1/",
-            "sc1" : "/home/cmanjun/src/sc1/" 
-        }
-        for key in disk_to_path_map:
-            if path.startswith(disk_to_path_map[key]):
+        for key in FileMeta.disk_to_path_map:
+            if path.startswith(FileMeta.disk_to_path_map[key]):
                 return key
         return None 
 

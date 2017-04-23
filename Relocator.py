@@ -20,7 +20,7 @@ class TravelAgent(object):
         if not os.path.exists(src_path):
             print("How did we reach here?")
             DBUtil().removeStaleEntry(src_path)
-            return
+            return 0
 
         # 1. check if dst has enough space
         available = DiskUtil.get_available_space("/".join(dst_path.split("/")[:-1]))
@@ -53,9 +53,9 @@ class TravelAgent(object):
         # Remove the symlink
         #get the symlink first
         symlinkname = src_path.replace(FileMeta.disk_to_path_map[disk_id], FileMeta.USER_DIRECTORY) 
-        symlinkname += '/'
+        # symlinkname += '/'
 
-        os.unlink(real_path)
+        os.unlink(symlinkname)
         os.symlink(dst_path, symlinkname)
 
         #os.symlink(dst_path, src_path)
@@ -133,7 +133,9 @@ class TravelAgent(object):
                     print("Daemon is vetoed. Abort!")
                     break
             else:
-                break
+                # continue if inner loop didn't break
+                continue
+            break
 
 
 if __name__ == "__main__":
