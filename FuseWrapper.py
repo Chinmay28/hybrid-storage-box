@@ -16,6 +16,7 @@ import threading
 import thread
 import time
 from CacheStore import FileMeta
+from Relocator import TravelAgent
 
 
 class FuseSystem(Operations):
@@ -250,6 +251,7 @@ class FuseSystem(Operations):
         return os.path.realpath(path)
 
 def main(mountpoint, root):
+    thread.start_new_thread(TravelAgent.runDaemon, ())
     FUSE(FuseSystem(root), mountpoint, nothreads=True, foreground=True)
 
 
