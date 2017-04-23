@@ -15,5 +15,5 @@ class FileMeta(object):
         "sc1" : "/mnt/sc1"
     }
 
-    DEFAULT_DISK = "/mnt/st1"
+    DEFAULT_DISK = "st1"
     USER_DIRECTORY = "/hime/ubuntu/storage_box"
