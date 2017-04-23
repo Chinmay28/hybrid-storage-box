@@ -20,10 +20,10 @@ class TravelAgent(object):
         if not os.path.exists(src_path):
             print("How did we reach here?")
             DBUtil().removeStaleEntry(src_path)
-            return 0
+            return None
 
         # 1. check if dst has enough space
-        available = DiskUtil.get_available_space("/".join(dst_path.split("/")[:-1]))
+        available = DiskUtil.get_available_space(disk_id)
         if available <= os.path.getsize(src_path):
             print("Available:", available, "File size:", os.path.getsize(src_path))
             # not enough space! Free diff+1024 (just a number)
@@ -52,7 +52,7 @@ class TravelAgent(object):
 
         # Remove the symlink
         #get the symlink first
-        symlinkname = src_path.replace(FileMeta.disk_to_path_map[disk_id], FileMeta.USER_DIRECTORY) 
+        symlinkname = src_path.replace(FileMeta.disk_to_path_map[DiskUtil.getDiskId(src_path)], FileMeta.USER_DIRECTORY) 
         # symlinkname += '/'
 
         os.unlink(symlinkname)
@@ -70,6 +70,9 @@ class TravelAgent(object):
         victim_rows = DBUtil().getColdRows(disk_id=disk_id, metric=metric)
         totalSize = 0
         index = 0
+        if not victim_rows:
+            # No victims. Abort.
+            return
         while totalSize < space_to_free:
             current = victim_rows[index]
             index += 1
@@ -80,6 +83,8 @@ class TravelAgent(object):
     def cleanupDisk(disk_id, space_to_free, metric):
 
         for victim in TravelAgent.getVictimIter(disk_id, space_to_free, metric):
+            print("Victims: ", victim)
+            time.sleep(2)
             src_path = victim[5]
 
             new_disk_id = "io1"
@@ -91,14 +96,20 @@ class TravelAgent(object):
                 new_disk_id = "sc1"
             else:
                 # Abort
-                return None
+                break
 
             dst_path = TravelAgent.getRelocationPath(src_path, new_disk_id)
+            print("Destination path: ", dst_path)
             if dst_path is None:
                 return None
-            TravelAgent.relocateFile(disk_id, src_path, dst_path, metric)
+            status = TravelAgent.relocateFile(new_disk_id, src_path, dst_path, metric)
+            if status is None:
+                break
 
             return 0
+        print("No victims!")
+        time.sleep(2)
+        return None
 
 
     @staticmethod
@@ -127,11 +138,11 @@ class TravelAgent(object):
                 if not row:
                     continue
                 print("Row to relocate: ", row)
-                status = TravelAgent.relocateFile(disk, row[0], TravelAgent.getRelocationPath(row[0], \
-                    disk_list[disk_list.index(disk)-1]), row[2])
+                status = TravelAgent.relocateFile(disk_list[disk_list.index(disk)-1], \
+                    row[0], TravelAgent.getRelocationPath(row[0], disk_list[disk_list.index(disk)-1]), row[2])
                 if status is None:
-                    print("Daemon is vetoed. Abort!")
-                    break
+                    print("Daemon couldn't score! It will now take a nap (15s) and try again later!")
+                    time.sleep(15)
             else:
                 # continue if inner loop didn't break
                 continue

@@ -47,8 +47,8 @@ class DBUtil(object):
         if disk_id and metric:
             cursor = self.connnection.cursor()
             cursor.execute("select file_id,volume_info,access_count,write_count,file_size,file_path from file_meta \
-            where volume_info=\'" + disk_id + "\' and access_count < \'" + str(metric[0]) + "\' \
-            and write_count < \'" + str(metric[1]) + "\' order by access_count;")
+            where volume_info=\'" + disk_id + "\' and access_count < \'" + str(metric) + "\' \
+            and write_count < \'" + str(metric) + "\' order by access_count;")
             result = cursor.fetchall()
             cursor.close()
             self.connnection.commit()
@@ -151,11 +151,11 @@ class DBUtil(object):
 class DiskUtil(object):
 
     @staticmethod
-    def get_available_space(path):
+    def get_available_space(disk_id):
         """
         http://stackoverflow.com/questions/787776/find-free-disk-space-in-python-on-os-x
         """
-        st = os.statvfs(path)
+        st = os.statvfs(FileMeta.disk_to_path_map[disk_id])
         return st.f_bavail * st.f_frsize
 
     @staticmethod
