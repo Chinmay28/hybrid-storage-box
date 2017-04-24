@@ -48,7 +48,7 @@ def func (fname, size, units, array):
     filename = fname+array[i]
     global w_time
     a = time.time()
-    file_gen(file_name, file_size)
+    file_gen(filename, size)
     w_time += (time.time()-a)
     return filename
 
