@@ -29,6 +29,16 @@ r_time = 0
 w_time = 0
 d_time = 0
 
+def file_gen(filename, filesize):
+    import sys
+
+    f = open(filename,"wb")
+    f.seek(int(filesize)-1)
+    f.write("\0")
+    f.close()
+    import os
+    print os.stat(filename).st_size
+
 def getts ():
     return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
 
@@ -36,11 +46,9 @@ def func (fname, size, units, array):
     index = randint(0,len(array))
     i = index%len(array)
     filename = fname+array[i]
-    cmd = "bash mkfile " + filename + " " + str(size) + units
-    print cmd
     global w_time
     a = time.time()
-    os.system(cmd)
+    file_gen(file_name, file_size)
     w_time += (time.time()-a)
     return filename
 
