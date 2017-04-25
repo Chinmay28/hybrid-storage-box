@@ -44,7 +44,6 @@ class TravelAgent(object):
         # 3. move file
         try: 
             shutil.copy2(src_path, dst_path)
-            os.unlink(src_path)
         except IOError:
             os.unlink(dst_path)
             print("Something went wrong. Retrying...")
@@ -64,6 +63,7 @@ class TravelAgent(object):
 
         os.unlink(symlinkname)
         os.symlink(dst_path, symlinkname)
+        os.unlink(src_path)
 
         #os.symlink(dst_path, src_path)
         

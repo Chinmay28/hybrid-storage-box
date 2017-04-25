@@ -85,6 +85,22 @@ class DBUtil(object):
             cursor = self.connnection.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
+            
+            if result is None:
+                file_id = str(uuid.uuid1())
+                result = [file_id]
+                FileMeta.path_to_uuid_map[src_path] = file_id
+                
+                last_update_time = last_move_time = create_time = str(time.time())
+                access_count = write_count = "0"
+                volume_info = FileMeta.DEFAULT_DISK
+                file_tag = "tada!"
+                query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
+                + src_path +"\', \'0\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
+                +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
+                print("Executing: ", query)
+                self.insert(query)
+            
             cursor.close()
             self.connnection.commit()
             return result[0]      

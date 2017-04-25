@@ -6,7 +6,7 @@ class FileMeta(object):
     access_count_map = defaultdict(int)
     write_count_map = defaultdict(int)
     path_to_uuid_map = defaultdict(int)
-    lock_map = defaultdict(threading.Lock)
+    lock_map = defaultdict(threading.RLock)
 
     disk_to_path_map = {
         "io1" : "/mnt/io1",
@@ -15,5 +15,5 @@ class FileMeta(object):
         "sc1" : "/mnt/sc1"
     }
 
-    DEFAULT_DISK = "st1"
+    DEFAULT_DISK = "sc1"
     USER_DIRECTORY = "" # is set by FuseWrapper

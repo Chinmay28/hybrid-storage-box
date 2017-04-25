@@ -25,7 +25,7 @@ class FuseSystem(Operations):
         self.root = root
         self.db_conn = DBUtil()
         #Start DB update thread. Pass self pointer and sleep time.
-        thread.start_new_thread(DBUtil.writeToDB, (self, 5))
+        thread.start_new_thread(DBUtil.writeToDB, (self, 15))
 
     # Helpers
     # =======
@@ -243,8 +243,7 @@ class FuseSystem(Operations):
         val = os.close(fh)
         #Unlock the lock taken during open or create.        
         lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
-        if lock.locked():
-            lock.release()
+        lock.release()
         return val
 
     def fsync(self, path, fdatasync, fh):
