@@ -17,8 +17,9 @@ class TravelAgent(object):
 
     @staticmethod
     def relocateFile(disk_id, src_path, dst_path, metric):
+        print("Trying to move " + src_path + " to " + dst_path + "...")
         if not os.path.exists(src_path):
-            print("How did we reach here?")
+            print("Removing stale DB entry.")
             DBUtil().removeStaleEntry(src_path)
             return None
 
@@ -37,11 +38,17 @@ class TravelAgent(object):
         file_id = FileMeta.path_to_uuid_map[src_path]
         if not file_id:
             file_id = DBUtil().getFileId(src_path)
-            print("File Id:", file_id)
+#             print("File Id:", file_id)
         lock = FileMeta.lock_map[file_id]
         lock.acquire()
         # 3. move file
-        shutil.move(src_path, dst_path)
+        try: 
+            shutil.move(src_path, dst_path)
+        except IOError:
+            os.unlink(dst_path)
+            print("Something went wrong. Retrying...")
+            TravelAgent.relocateFile(disk_id, src_path, dst_path, metric)
+
 
         #ThreadIssue: If some other thread tries to access path_to_uuid_map at 
         #the same time for the same file then we are dead. Potential solution=one lock for this map.
@@ -62,6 +69,7 @@ class TravelAgent(object):
         
         #Release lock
         lock.release()
+        print("Move " + src_path + " to " + dst_path + " successful!")
         return 0
 
 

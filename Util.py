@@ -106,14 +106,19 @@ class DBUtil(object):
             time.sleep(sleeptime)
             #Write to DB only if any dictionary is not empty
             if len(FileMeta.access_count_map) > 0 or len(FileMeta.write_count_map) > 0:
-                print("Writing file counts to DB (one by one)")
+                print("Updating counts in DB...")
                 #loop on all file locks
                 for path in FileMeta.path_to_uuid_map:
                     realpath = fuseObject.getrealpath(path)
                     file_id = FileMeta.path_to_uuid_map[realpath]
                     lock = FileMeta.lock_map[file_id]
+                    
+                    if not file_id:
+                        file_id = fuseObject.db_conn.getFileId(realpath)
+                        FileMeta.path_to_uuid_map[realpath] = file_id
+                    
                     # get the old counts
-                    if file_id is not 0:
+                    if file_id:
                         old_counts = fuseObject.db_conn.getCounts(file_id)
                     else:
                         # no entry in the DB or Cache. lets create it!
@@ -122,7 +127,7 @@ class DBUtil(object):
                         
                         last_update_time = last_move_time = create_time = str(time.time())
                         access_count = write_count = "0"
-                        volume_info = "hdd_hot"
+                        volume_info = FileMeta.DEFAULT_DISK
                         file_tag = "tada!"
                         query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
                         + realpath +"\', \'0\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\

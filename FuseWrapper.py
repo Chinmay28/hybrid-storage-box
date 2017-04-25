@@ -25,7 +25,7 @@ class FuseSystem(Operations):
         self.root = root
         self.db_conn = DBUtil()
         #Start DB update thread. Pass self pointer and sleep time.
-        thread.start_new_thread(DBUtil.writeToDB, (self, 100))
+        thread.start_new_thread(DBUtil.writeToDB, (self, 15))
 
     # Helpers
     # =======
@@ -51,14 +51,14 @@ class FuseSystem(Operations):
     def chmod(self, path, mode):
         print("LOG: chmod")
         full_path = self.getrealpath(self._full_path(path))
-        os.chmod(seld._full_path(path), mode)
+        os.chmod(self._full_path(path), mode)
         return os.chmod(full_path, mode)
 
     #Same as chmod
     def chown(self, path, uid, gid):
         print("LOG: chown")
         full_path = self.getrealpath(self._full_path(path))
-        os.chown(seld._full_path(path), uid, gid)
+        os.chown(self._full_path(path), uid, gid)
         return os.chown(full_path, uid, gid)
 
     #Get real files attributes. User will not know if we have created a symlink
@@ -127,6 +127,7 @@ class FuseSystem(Operations):
         FileMeta.access_count_map.pop(fid, None)
         lock = FileMeta.lock_map.pop(fid, None)
         lock.release()
+        DBUtil().removeStaleEntry(real_path)
         return retval
 
     def symlink(self, target, name):
@@ -167,6 +168,12 @@ class FuseSystem(Operations):
         #Aquire lock so that policy thread wont interfere. Unlock in release method
         lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
         lock.acquire()
+        #update read count
+        if not FileMeta.path_to_uuid_map[realpath]:
+            file_id = self.db_conn.getFileId(realpath)
+            FileMeta.path_to_uuid_map[realpath] = file_id
+            
+        FileMeta.access_count_map[FileMeta.path_to_uuid_map[realpath]] += 1
         return os.open(full_path, flags)
 
     def create(self, path, mode, fi=None):
@@ -210,8 +217,6 @@ class FuseSystem(Operations):
         realpath = self.getrealpath(self._full_path(path))
         print("LOG: read ", realpath)
         os.lseek(fh, offset, os.SEEK_SET)
-        #update read count
-        FileMeta.access_count_map[FileMeta.path_to_uuid_map[realpath]] += 1
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
@@ -239,7 +244,11 @@ class FuseSystem(Operations):
         val = os.close(fh)
         #Unlock the lock taken during open or create.        
         lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
-        lock.release()
+        if lock.locked():
+            print("\n\nTMP\n\n")
+            lock.release()
+        else:
+            print("\n\nASS!!\n\n")
         return val
 
     def fsync(self, path, fdatasync, fh):

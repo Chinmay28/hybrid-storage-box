@@ -6,7 +6,7 @@ class FileMeta(object):
     access_count_map = defaultdict(int)
     write_count_map = defaultdict(int)
     path_to_uuid_map = defaultdict(int)
-    lock_map = defaultdict(threading.RLock)
+    lock_map = defaultdict(threading.Lock)
 
     disk_to_path_map = {
         "io1" : "/mnt/io1",
