@@ -245,10 +245,7 @@ class FuseSystem(Operations):
         #Unlock the lock taken during open or create.        
         lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
         if lock.locked():
-            print("\n\nTMP\n\n")
             lock.release()
-        else:
-            print("\n\nASS!!\n\n")
         return val
 
     def fsync(self, path, fdatasync, fh):
