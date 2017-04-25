@@ -25,7 +25,7 @@ class FuseSystem(Operations):
         self.root = root
         self.db_conn = DBUtil()
         #Start DB update thread. Pass self pointer and sleep time.
-        thread.start_new_thread(DBUtil.writeToDB, (self, 15))
+        thread.start_new_thread(DBUtil.writeToDB, (self, 5))
 
     # Helpers
     # =======
@@ -127,7 +127,6 @@ class FuseSystem(Operations):
         FileMeta.access_count_map.pop(fid, None)
         lock = FileMeta.lock_map.pop(fid, None)
         lock.release()
-        DBUtil().removeStaleEntry(real_path)
         return retval
 
     def symlink(self, target, name):

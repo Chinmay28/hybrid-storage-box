@@ -43,12 +43,12 @@ class TravelAgent(object):
         lock.acquire()
         # 3. move file
         try: 
-            shutil.move(src_path, dst_path)
+            shutil.copy2(src_path, dst_path)
+            os.unlink(src_path)
         except IOError:
             os.unlink(dst_path)
             print("Something went wrong. Retrying...")
             TravelAgent.relocateFile(disk_id, src_path, dst_path, metric)
-
 
         #ThreadIssue: If some other thread tries to access path_to_uuid_map at 
         #the same time for the same file then we are dead. Potential solution=one lock for this map.
