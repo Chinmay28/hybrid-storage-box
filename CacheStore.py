@@ -1,5 +1,19 @@
 from collections import defaultdict
 import threading
+import logging
+
+main_logger = logging.getLogger('HYBRID_STORAGE_BOX')
+hdlr = logging.FileHandler('/home/ubuntu/main.log')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+main_logger.addHandler(hdlr) 
+main_logger.setLevel(logging.INFO)
+
+db_logger = logging.getLogger('DB_LOG')
+hdlr2 = logging.FileHandler('/home/ubuntu/db.log')
+hdlr2.setFormatter(formatter)
+db_logger.addHandler(hdlr2) 
+db_logger.setLevel(logging.INFO)
 
 class FileMeta(object):
 

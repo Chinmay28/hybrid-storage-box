@@ -17,6 +17,7 @@ import thread
 import time
 from CacheStore import FileMeta
 from Relocator import TravelAgent
+from CacheStore import db_logger, main_logger
 
 
 class FuseSystem(Operations):
@@ -43,20 +44,20 @@ class FuseSystem(Operations):
     #Do not use real path here. This function is appliicable fo symlinks as well
     def access(self, path, mode):
         full_path = self._full_path(path)
-        print("LOG: access")
+        main_logger.info("access")
         if not os.access(full_path, mode):
             raise FuseOSError(errno.EACCES)
 
     #Permissions of both symlink as well as the real file have to change
     def chmod(self, path, mode):
-        print("LOG: chmod")
+        main_logger.info("chmod")
         full_path = self.getrealpath(self._full_path(path))
         os.chmod(self._full_path(path), mode)
         return os.chmod(full_path, mode)
 
     #Same as chmod
     def chown(self, path, uid, gid):
-        print("LOG: chown")
+        main_logger.info("chown")
         full_path = self.getrealpath(self._full_path(path))
         os.chown(self._full_path(path), uid, gid)
         return os.chown(full_path, uid, gid)
@@ -64,14 +65,14 @@ class FuseSystem(Operations):
     #Get real files attributes. User will not know if we have created a symlink
     def getattr(self, path, fh=None):
         full_path = self.getrealpath(self._full_path(path))
-        print("LOG: getattr ", path, self._full_path(path), full_path)
+        main_logger.info("getattr "+ path + self._full_path(path)+ full_path)
         st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
      #Always on real folder
     def readdir(self, path, fh):
-        print("LOG: readdir")
+        main_logger.info("readdir")
         full_path = self.getrealpath(self._full_path(path))
 
         dirents = ['.', '..']
@@ -82,7 +83,7 @@ class FuseSystem(Operations):
 
     #Applicable for links, so sont use real path
     def readlink(self, path):
-        print("LOG: readlink")
+        main_logger.info("readlink")
         pathname = os.readlink(self._full_path(path))
         if pathname.startswith("/"):
             # Path name is absolute, sanitize it.
@@ -91,20 +92,20 @@ class FuseSystem(Operations):
             return pathname
 
     def mknod(self, path, mode, dev):
-        print("LOG: mknode")
+        main_logger.info("mknode")
         return os.mknod(self.getrealpath(self._full_path(path)), mode, dev)
 
     def rmdir(self, path):
-        print("LOG: rmdir")
+        main_logger.info("rmdir")
         full_path = self.getrealpath(self._full_path(path))
         return os.rmdir(full_path)
 
     def mkdir(self, path, mode):
-        print("LOG: mkdir")
+        main_logger.info("mkdir")
         return os.mkdir(self.getrealpath(self._full_path(path)), mode)
 
     def statfs(self, path):
-        print("LOG: statfs")
+        main_logger.info(" statfs")
         full_path = self.getrealpath(self._full_path(path))
         stv = os.statvfs(full_path)
         return dict((key, getattr(stv, key)) for key in ('f_bavail', 'f_bfree',
@@ -114,7 +115,7 @@ class FuseSystem(Operations):
     #When symlink gets deleted, we need to delete the real file as well as the symlink
     def unlink(self, path):
         real_path = self.getrealpath(self._full_path(path))
-        print("LOG: unlink ", real_path)
+        main_logger.info(" unlink "+ real_path)
         fid = FileMeta.path_to_uuid_map[real_path]
         lock = FileMeta.lock_map[fid]
         lock.acquire()
@@ -131,13 +132,13 @@ class FuseSystem(Operations):
 
     def symlink(self, target, name):
         target = self.getrealpath(self._full_path(target))
-        print("LOG: symlink", target, self._full_path(name))
+        main_logger.info(" symlink"+ target+ self._full_path(name))
         return os.symlink(target, self._full_path(name))
         
         
     #rename symlinks only
     def rename(self, old, new):
-        print("LOG: rename")
+        main_logger.info(" rename")
         realpath = self.getrealpath(self._full_path(old))
 
         #Aquire lock so that policy thread wont interfere
@@ -150,11 +151,11 @@ class FuseSystem(Operations):
 
     #WE ARE DEAD IF THIS GETS CALLED
     def link(self, target, name):
-        print("LOG: link")
+        main_logger.info(" link")
         return os.link(self._full_path(target), self._full_path(name))
 
     def utimens(self, path, times=None):
-        print("LOG: utimes")
+        main_logger.info(" utimes")
         return os.utime(self.getrealpath(self._full_path(path)), times)
         
     # File methods
@@ -163,7 +164,7 @@ class FuseSystem(Operations):
     def open(self, path, flags):
         full_path = self._full_path(path)
         realpath = self.getrealpath(full_path)
-        print("LOG: open ", realpath)
+        main_logger.info(" open "+ realpath)
 
         #update read count
         if not FileMeta.path_to_uuid_map[realpath]:
@@ -196,9 +197,9 @@ class FuseSystem(Operations):
         lock.acquire()
         actual_path = os.path.abspath(FileMeta.disk_to_path_map[FileMeta.DEFAULT_DISK])
         actual_path += path
-        print("Actually writing to = ", actual_path)
+        main_logger.info("Actually writing to = "+ actual_path)
 
-        print("LOG create(): ", full_path)
+        main_logger.info("create(): "+ full_path)
 
         #Prepare query
         last_update_time = last_move_time = create_time = str(time.time())
@@ -210,11 +211,11 @@ class FuseSystem(Operations):
         +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
         self.db_conn.insert(query)
 
-        print("DB update finished.")
+        main_logger.info("DB update finished.")
         #Add path and uuid to dictionary
         FileMeta.path_to_uuid_map[actual_path] = file_id
 
-        print("update usage count...")
+        main_logger.info("update usage count...")
         FileMeta.access_count_map[file_id] += 1
         FileMeta.write_count_map[file_id] += 1
 
@@ -224,13 +225,13 @@ class FuseSystem(Operations):
 
     def read(self, path, length, offset, fh):
         realpath = self.getrealpath(self._full_path(path))
-        print("LOG: read ", realpath)
+        main_logger.info(" read "+ realpath)
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
 
     def write(self, path, buf, offset, fh):
         realpath = self.getrealpath(self._full_path(path))
-        print("LOG: write ", realpath)
+        main_logger.info(" write "+ realpath)
         os.lseek(fh, offset, os.SEEK_SET)
         #update write count
         FileMeta.write_count_map[FileMeta.path_to_uuid_map[realpath]] += 1
@@ -238,17 +239,17 @@ class FuseSystem(Operations):
 
     def truncate(self, path, length, fh=None):
         realpath = self.getrealpath(self._full_path(path))
-        print("LOG: truncate ", realpath)
+        main_logger.info(" truncate "+ realpath)
         with open(realpath, 'r+') as f:
             f.truncate(length)
 
     def flush(self, path, fh):
-        print("LOG: flush ", self.getrealpath(self._full_path(path)))
+        main_logger.info(" flush "+ self.getrealpath(self._full_path(path)))
         return os.fsync(fh)
 
     def release(self, path, fh):
         realpath = self.getrealpath(self._full_path(path))
-        print("LOG: release ", realpath)
+        main_logger.info(" release "+ realpath)
         val = os.close(fh)
         #Unlock the lock taken during open or create.        
         lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
@@ -256,7 +257,7 @@ class FuseSystem(Operations):
         return val
 
     def fsync(self, path, fdatasync, fh):
-        print("LOG: fsync ", path)
+        main_logger.info(" fsync "+ path)
         return self.flush(path, fh)
 
     def getrealpath(self, path):

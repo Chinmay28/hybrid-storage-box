@@ -7,6 +7,7 @@ from CacheStore import FileMeta
 import time
 import shutil
 import uuid
+from CacheStore import db_logger, main_logger
 
 
 """ Only one instance of the class would be created 
@@ -19,24 +20,24 @@ class TravelAgent(object):
     @staticmethod
     def relocateFile(disk_id, src_path, dst_path, metric):
         if src_path == dst_path:
-            print("src_path = dst_path! Crazy. FIXME. Denying request.")
+            main_logger.error("src_path = dst_path! Crazy. FIXME. Denying request.")
             return None
-        print("Trying to move " + src_path + " to " + dst_path + "...")
+        main_logger.info("Trying to move " + src_path + " to " + dst_path + "...")
         if not os.path.exists(src_path):
-            print("Removing stale DB entry.")
+            main_logger.info("Removing stale DB entry.")
             DBUtil().removeStaleEntry(src_path)
             return None
 
         # 1. check if dst has enough space
         available = DiskUtil.get_available_space(disk_id)
         if available <= os.path.getsize(src_path):
-            print("Available:", available, "File size:", os.path.getsize(src_path))
+            main_logger.info("Available:"+ available+ "File size:"+ str(os.path.getsize(src_path)))
             # not enough space! Free diff+1024 (just a number)
             status = TravelAgent.cleanupDisk(disk_id, os.path.getsize(src_path) - available + 1024, metric)
             if status is None:
                 return None
         else:
-            print("We are good! Available:", available, "File size:", os.path.getsize(src_path))
+            main_logger.info("We are good! Available:"+ str(available)+ "File size:"+ str(os.path.getsize(src_path)))
 
         #Get the file id and take lock
         file_id = FileMeta.path_to_uuid_map[src_path]
@@ -58,7 +59,7 @@ class TravelAgent(object):
             shutil.copy2(src_path, dst_path)
         except IOError:
             os.unlink(dst_path)
-            print("Something went wrong. Retrying...")
+            main_logger.info("Something went wrong. Retrying...")
             TravelAgent.relocateFile(disk_id, src_path, dst_path, metric)
 
         #ThreadIssue: If some other thread tries to access path_to_uuid_map at 
@@ -81,7 +82,7 @@ class TravelAgent(object):
         
         #Release lock
         lock.release()
-        print("Move " + src_path + " to " + dst_path + " successful!")
+        main_logger.info("Move " + src_path + " to " + dst_path + " successful!")
         return 0
 
 
@@ -101,10 +102,10 @@ class TravelAgent(object):
 
     @staticmethod
     def cleanupDisk(disk_id, space_to_free, metric):
-        print("cleanupDisk", disk_id, space_to_free, metric)
+        main_logger.info("cleanupDisk"+ disk_id+ str(space_to_free)+ str(metric))
 
         for victim in TravelAgent.getVictimIter(disk_id, space_to_free, metric):
-            print("Victims: ", victim)
+            main_logger.info("Victims: "+ victim)
             time.sleep(2)
             src_path = victim[5]
 
@@ -120,7 +121,7 @@ class TravelAgent(object):
                 break
 
             dst_path = TravelAgent.getRelocationPath(src_path, new_disk_id)
-            print("Destination path: ", dst_path)
+            main_logger.info("Destination path: "+ dst_path)
             if dst_path is None:
                 return None
             status = TravelAgent.relocateFile(new_disk_id, src_path, dst_path, metric)
@@ -128,7 +129,7 @@ class TravelAgent(object):
                 break
 
             return 0
-        print("No victims!")
+        main_logger.info("No victims!")
         time.sleep(2)
         return None
 
@@ -154,11 +155,11 @@ class TravelAgent(object):
                 row = DBUtil().getHotRow(disk)
                 if not row:
                     continue
-                print("Row to relocate: ", row)
+                main_logger.info("Row to relocate: "+ str(row))
                 status = TravelAgent.relocateFile(disk_list[disk_list.index(disk)-1], \
                     row[0], TravelAgent.getRelocationPath(row[0], disk, disk_list[disk_list.index(disk)-1]), row[2])
                 if status is None:
-                    print("Daemon couldn't score! It will now take a nap (15s) and try again later!")
+                    main_logger.info("Daemon couldn't score! It will now take a nap (15s) and try again later!")
                     time.sleep(15)
             else:
                 # continue if inner loop didn't break
