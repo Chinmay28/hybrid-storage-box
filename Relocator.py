@@ -6,6 +6,7 @@ from Util import DiskUtil, DBUtil
 from CacheStore import FileMeta
 import time
 import shutil
+import uuid
 
 
 """ Only one instance of the class would be created 
@@ -17,6 +18,9 @@ class TravelAgent(object):
 
     @staticmethod
     def relocateFile(disk_id, src_path, dst_path, metric):
+        if src_path == dst_path:
+            print("src_path = dst_path! Crazy. FIXME. Denying request.")
+            return None
         print("Trying to move " + src_path + " to " + dst_path + "...")
         if not os.path.exists(src_path):
             print("Removing stale DB entry.")
@@ -38,8 +42,16 @@ class TravelAgent(object):
         file_id = FileMeta.path_to_uuid_map[src_path]
         if not file_id:
             file_id = DBUtil().getFileId(src_path)
-#             print("File Id:", file_id)
-        lock = FileMeta.lock_map[file_id]
+            FileMeta.path_to_uuid_map[src_path] = file_id
+        
+        if file_id:
+            #Aquire lock so that policy thread wont interfere. Unlock in release method
+            lock = FileMeta.lock_map[file_id]           
+        else:
+            file_id = str(uuid.uuid1())
+            FileMeta.path_to_uuid_map[src_path] = file_id
+            lock = FileMeta.lock_map[file_id]
+                    
         lock.acquire()
         # 3. move file
         try: 
@@ -122,15 +134,10 @@ class TravelAgent(object):
 
 
     @staticmethod
-    def getRelocationPath(old_path, new_disk_id):
+    def getRelocationPath(old_path, old_disk_id, new_disk_id):
 
-        for key in FileMeta.disk_to_path_map:
-            if old_path.startswith(FileMeta.disk_to_path_map[key]):
-                return old_path.replace(FileMeta.disk_to_path_map[key], \
-                    FileMeta.disk_to_path_map[new_disk_id])
-
-        return None
-
+        return old_path.replace(FileMeta.disk_to_path_map[old_disk_id], \
+                FileMeta.disk_to_path_map[new_disk_id])
 
     @staticmethod
     def runDaemon(frequency=2):
@@ -149,7 +156,7 @@ class TravelAgent(object):
                     continue
                 print("Row to relocate: ", row)
                 status = TravelAgent.relocateFile(disk_list[disk_list.index(disk)-1], \
-                    row[0], TravelAgent.getRelocationPath(row[0], disk_list[disk_list.index(disk)-1]), row[2])
+                    row[0], TravelAgent.getRelocationPath(row[0], disk, disk_list[disk_list.index(disk)-1]), row[2])
                 if status is None:
                     print("Daemon couldn't score! It will now take a nap (15s) and try again later!")
                     time.sleep(15)

@@ -93,7 +93,7 @@ class DBUtil(object):
                 
                 last_update_time = last_move_time = create_time = str(time.time())
                 access_count = write_count = "0"
-                volume_info = FileMeta.DEFAULT_DISK
+                volume_info = DiskUtil.getDiskId(src_path)
                 file_tag = "tada!"
                 query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
                 + src_path +"\', \'0\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
@@ -135,30 +135,33 @@ class DBUtil(object):
             for path in FileMeta.path_to_uuid_map:
                 realpath = os.path.realpath(path)
                 file_id = FileMeta.path_to_uuid_map[realpath]
-                lock = FileMeta.lock_map[file_id]
-                lock.acquire()
                 
                 if not file_id:
-                    file_id = db_conn.getFileId(realpath)
-                    FileMeta.path_to_uuid_map[realpath] = file_id
-
-                # get the old counts
+                    file_id = db_conn.getFileId(realpath) 
+                    FileMeta.path_to_uuid_map[realpath] = file_id               
+                
                 if file_id:
-                    old_counts = db_conn.getCounts(file_id)
+                    #Aquire lock so that policy thread wont interfere. Unlock in release method
+                    lock = FileMeta.lock_map[file_id]
+                    lock.acquire()
+                    old_counts = db_conn.getCounts(file_id)     
                 else:
-                    # no entry in the DB or Cache. lets create it!
                     file_id = str(uuid.uuid1())
                     FileMeta.path_to_uuid_map[realpath] = file_id
-                    
+                    lock = FileMeta.lock_map[file_id]                                                                                            
+                    lock.acquire()                    
                     last_update_time = last_move_time = create_time = str(time.time())
                     access_count = write_count = "0"
-                    volume_info = FileMeta.DEFAULT_DISK
+                    volume_info = DiskUtil.getDiskId(realpath)
                     file_tag = "tada!"
                     query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
                     + realpath +"\', \'" + str(os.path.getsize(realpath)) + "\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
                     +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
                     print("Executing: ", query)
                     db_conn.insert(query)
+                    old_counts = [0, 0]
+                
+                if not old_counts:
                     old_counts = [0, 0]
                     
                 #only write if atleast one count is non zero. (This condition should not occur)
@@ -194,7 +197,6 @@ class DiskUtil(object):
             if path.startswith(FileMeta.disk_to_path_map[key]):
                 return key
         return None 
-
 
 if __name__ == "__main__":
     print(DBUtil().getHotRow("io1"))

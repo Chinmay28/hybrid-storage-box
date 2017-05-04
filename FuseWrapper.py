@@ -164,14 +164,24 @@ class FuseSystem(Operations):
         full_path = self._full_path(path)
         realpath = self.getrealpath(full_path)
         print("LOG: open ", realpath)
-        #Aquire lock so that policy thread wont interfere. Unlock in release method
-        lock = FileMeta.lock_map[FileMeta.path_to_uuid_map[realpath]]
-        lock.acquire()
+
         #update read count
         if not FileMeta.path_to_uuid_map[realpath]:
             file_id = self.db_conn.getFileId(realpath)
             FileMeta.path_to_uuid_map[realpath] = file_id
-            
+        else:
+            file_id = FileMeta.path_to_uuid_map[realpath]
+        
+        if file_id:
+            #Aquire lock so that policy thread wont interfere. Unlock in release method
+            lock = FileMeta.lock_map[file_id]           
+        else:
+            file_id = str(uuid.uuid1())
+            FileMeta.path_to_uuid_map[realpath] = file_id
+            lock = FileMeta.lock_map[file_id]
+        
+        lock.acquire()
+   
         FileMeta.access_count_map[FileMeta.path_to_uuid_map[realpath]] += 1
         return os.open(full_path, flags)
 
