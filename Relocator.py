@@ -139,6 +139,7 @@ class TravelAgent(object):
 
         while True:
             time.sleep(frequency)
+            DBUtil.writeToDB();
 
             #We will never move any thing from io1 in this daemon.
             #Files will only move out of it during clean up

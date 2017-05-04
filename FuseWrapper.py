@@ -25,7 +25,7 @@ class FuseSystem(Operations):
         self.root = root
         self.db_conn = DBUtil()
         #Start DB update thread. Pass self pointer and sleep time.
-        thread.start_new_thread(DBUtil.writeToDB, (self, 15))
+        #thread.start_new_thread(DBUtil.writeToDB, (self, 15))
 
     # Helpers
     # =======
@@ -222,8 +222,7 @@ class FuseSystem(Operations):
         realpath = self.getrealpath(self._full_path(path))
         print("LOG: write ", realpath)
         os.lseek(fh, offset, os.SEEK_SET)
-        #update read and write count
-        FileMeta.access_count_map[FileMeta.path_to_uuid_map[realpath]] += 1
+        #update write count
         FileMeta.write_count_map[FileMeta.path_to_uuid_map[realpath]] += 1
         return os.write(fh, buf)
 

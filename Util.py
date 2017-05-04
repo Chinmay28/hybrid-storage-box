@@ -58,7 +58,7 @@ class DBUtil(object):
         if disk_id:
             query = "select file_path,file_size,access_count,volume_info from file_meta \
             where volume_info=\'"+disk_id+"\' order by access_count desc limit 1;"
-            print(query)
+            # print(query)
             cursor = self.connnection.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
@@ -112,60 +112,69 @@ class DBUtil(object):
             cursor = self.connnection.cursor()
             cursor.execute(query)
             cursor.close()
-            self.connnection.commit()           
+            self.connnection.commit()
+
+
+    def updateSize(self, src_path, size):
+        if src_path:
+            query = "update file_meta set file_size=\'"+size+"\' where file_path=\'"+src_path+"\';"
+            print(query)
+            cursor = self.connnection.cursor()
+            cursor.execute(query)
+            cursor.close()
+            self.connnection.commit()    
             
 
     @staticmethod
-    def writeToDB(fuseObject, sleeptime):
-        while True:
-            #Wake up every sleeptime seconds
-            time.sleep(sleeptime)
-            #Write to DB only if any dictionary is not empty
-            if len(FileMeta.access_count_map) > 0 or len(FileMeta.write_count_map) > 0:
-                print("Updating counts in DB...")
-                #loop on all file locks
-                for path in FileMeta.path_to_uuid_map:
-                    realpath = fuseObject.getrealpath(path)
-                    file_id = FileMeta.path_to_uuid_map[realpath]
-                    lock = FileMeta.lock_map[file_id]
-                    
-                    if not file_id:
-                        file_id = fuseObject.db_conn.getFileId(realpath)
-                        FileMeta.path_to_uuid_map[realpath] = file_id
-                    
-                    # get the old counts
-                    if file_id:
-                        old_counts = fuseObject.db_conn.getCounts(file_id)
-                    else:
-                        # no entry in the DB or Cache. lets create it!
-                        file_id = str(uuid.uuid1())
-                        FileMeta.path_to_uuid_map[realpath] = file_id
-                        
-                        last_update_time = last_move_time = create_time = str(time.time())
-                        access_count = write_count = "0"
-                        volume_info = FileMeta.DEFAULT_DISK
-                        file_tag = "tada!"
-                        query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
-                        + realpath +"\', \'0\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
-                        +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
-                        print("Executing: ", query)
-                        fuseObject.db_conn.insert(query)
-                        old_counts = [0, 0]
-                        
-                    lock.acquire()
-                    #only write if atleast one count is non zero. (This condition should not occur)
-                    if FileMeta.access_count_map[file_id] > 0 or FileMeta.write_count_map[file_id] > 0:
-                        #write to DB
-                        update_query = "update file_meta set access_count=\'" + \
-                        str(FileMeta.access_count_map[file_id] + old_counts[0])+"\', write_count=\'" \
-                        + str(FileMeta.write_count_map[file_id] + old_counts[0])+"\' where file_id=\'" + str(file_id)+ "\';"
-                        print("Executing: ", update_query)
-                        fuseObject.db_conn.insert(update_query)
+    def writeToDB():
+        #Write to DB only if any dictionary is not empty
+        if len(FileMeta.access_count_map) > 0 or len(FileMeta.write_count_map) > 0:
+            print("Updating counts in DB...")
+            db_conn = DBUtil()
+            #loop on all file locks
+            for path in FileMeta.path_to_uuid_map:
+                realpath = os.path.realpath(path)
+                file_id = FileMeta.path_to_uuid_map[realpath]
+                lock = FileMeta.lock_map[file_id]
+                lock.acquire()
+                
+                if not file_id:
+                    file_id = db_conn.getFileId(realpath)
+                    FileMeta.path_to_uuid_map[realpath] = file_id
 
-                    lock.release()
-                #Clear both count dictionaries. Note that we dont need to clear lock dictionary.
-                FileMeta.access_count_map.clear()
-                FileMeta.write_count_map.clear()
+                # get the old counts
+                if file_id:
+                    old_counts = db_conn.getCounts(file_id)
+                else:
+                    # no entry in the DB or Cache. lets create it!
+                    file_id = str(uuid.uuid1())
+                    FileMeta.path_to_uuid_map[realpath] = file_id
+                    
+                    last_update_time = last_move_time = create_time = str(time.time())
+                    access_count = write_count = "0"
+                    volume_info = FileMeta.DEFAULT_DISK
+                    file_tag = "tada!"
+                    query = "insert into file_meta values( \'" + str(file_id)+"\', \'" \
+                    + realpath +"\', \'" + str(os.path.getsize(realpath)) + "\',\'" + create_time+ "\', \'" + last_update_time+"\', \'" + last_move_time\
+                    +"\', \'" + str(access_count)+"\', \'" + str(write_count)+"\', \'" + volume_info+"\', \'" + file_tag+"\');"
+                    print("Executing: ", query)
+                    db_conn.insert(query)
+                    old_counts = [0, 0]
+                    
+                #only write if atleast one count is non zero. (This condition should not occur)
+                if FileMeta.access_count_map[file_id] > 0 or FileMeta.write_count_map[file_id] > 0:
+                    #write to DB
+                    update_query = "update file_meta set access_count=\'" + \
+                    str(FileMeta.access_count_map[file_id] + old_counts[0])+"\', write_count=\'" \
+                    + str(FileMeta.write_count_map[file_id] + old_counts[0])+"\', file_size=\'" + str(os.path.getsize(realpath)) + "\' \
+                    where file_id=\'" + str(file_id)+ "\';"
+                    print("Executing: ", update_query)
+                    db_conn.insert(update_query)
+
+                lock.release()
+            #Clear both count dictionaries. Note that we dont need to clear lock dictionary.
+            FileMeta.access_count_map.clear()
+            FileMeta.write_count_map.clear()
 
 
 
