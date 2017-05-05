@@ -145,12 +145,14 @@ class DBUtil(object):
                     #Aquire lock so that policy thread wont interfere. Unlock in release method
                     lock = FileMeta.lock_map[file_id]
                     lock.acquire()
+                    realpath = os.path.realpath(path)
                     old_counts = db_conn.getCounts(file_id)     
                 else:
                     file_id = str(uuid.uuid1())
                     FileMeta.path_to_uuid_map[realpath] = file_id
                     lock = FileMeta.lock_map[file_id]                                                                                            
-                    lock.acquire()                    
+                    lock.acquire()
+                    realpath = os.path.realpath(path)                    
                     last_update_time = last_move_time = create_time = str(time.time())
                     access_count = write_count = "0"
                     volume_info = DiskUtil.getDiskId(realpath)

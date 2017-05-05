@@ -31,7 +31,7 @@ class TravelAgent(object):
         # 1. check if dst has enough space
         available = DiskUtil.get_available_space(disk_id)
         if available <= os.path.getsize(src_path):
-            main_logger.info("Available:"+ available+ "File size:"+ str(os.path.getsize(src_path)))
+            main_logger.info("Available:"+ str(available)+ "File size:"+ str(os.path.getsize(src_path)))
             # not enough space! Free diff+1024 (just a number)
             status = TravelAgent.cleanupDisk(disk_id, os.path.getsize(src_path) - available + 1024, metric)
             if status is None:
@@ -56,14 +56,11 @@ class TravelAgent(object):
         lock.acquire()
         # 3. move file
         try: 
-            shutil.copy2(src_path, dst_path)
+            shutil.move(src_path, dst_path)
         except IOError:
-            os.unlink(dst_path)
             main_logger.info("Something went wrong. Retrying...")
             TravelAgent.relocateFile(disk_id, src_path, dst_path, metric)
 
-        #ThreadIssue: If some other thread tries to access path_to_uuid_map at 
-        #the same time for the same file then we are dead. Potential solution=one lock for this map.
         #But we need to update the path to id map
         FileMeta.path_to_uuid_map.pop(src_path, None)
         DBUtil().updateFilePath(file_id, dst_path)
@@ -72,14 +69,10 @@ class TravelAgent(object):
         # Remove the symlink
         #get the symlink first
         symlinkname = src_path.replace(FileMeta.disk_to_path_map[DiskUtil.getDiskId(src_path)], FileMeta.USER_DIRECTORY) 
-        # symlinkname += '/'
 
         os.unlink(symlinkname)
         os.symlink(dst_path, symlinkname)
-        os.unlink(src_path)
 
-        #os.symlink(dst_path, src_path)
-        
         #Release lock
         lock.release()
         main_logger.info("Move " + src_path + " to " + dst_path + " successful!")
@@ -105,7 +98,7 @@ class TravelAgent(object):
         main_logger.info("cleanupDisk"+ disk_id+ str(space_to_free)+ str(metric))
 
         for victim in TravelAgent.getVictimIter(disk_id, space_to_free, metric):
-            main_logger.info("Victims: "+ victim)
+            main_logger.info("Victims: "+ str(victim))
             time.sleep(2)
             src_path = victim[5]
 
@@ -120,7 +113,7 @@ class TravelAgent(object):
                 # Abort
                 break
 
-            dst_path = TravelAgent.getRelocationPath(src_path, new_disk_id)
+            dst_path = TravelAgent.getRelocationPath(src_path, disk_id, new_disk_id)
             main_logger.info("Destination path: "+ dst_path)
             if dst_path is None:
                 return None
