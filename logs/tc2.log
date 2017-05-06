@@ -1,0 +1,173 @@
+root@ip-172-31-3-110:~# bash hybrid-storage-box/scripts/mkfile.sh storage_box/smallfile 4M
+4+0 records in
+4+0 records out
+4194304 bytes (4.2 MB, 4.0 MiB) copied, 0.155463 s, 27.0 MB/s
+root@ip-172-31-3-110:~#
+root@ip-172-31-3-110:~# tt
+/mnt/
+├── [4.0K]  gp2
+│   ├── [1.2G]  file11
+│   ├── [2.6G]  file15
+│   ├── [3.2G]  file18
+│   └── [2.1G]  file29
+├── [4.0K]  io1
+│   ├── [442M]  file28
+│   ├── [3.3G]  file9
+│   ├── [ 16K]  lost+found
+│   └── [500M]  testfile
+├── [4.0K]  jo
+├── [4.0K]  mg
+├── [4.0K]  sc1
+│   ├── [ 16K]  lost+found
+│   └── [4.0M]  smallfile
+└── [4.0K]  st1
+    ├── [663M]  file1
+    ├── [3.1G]  file10
+    ├── [2.2G]  file12
+    ├── [1.2G]  file13
+    ├── [3.0G]  file14
+    ├── [357M]  file16
+    ├── [2.8G]  file17
+    ├── [510M]  file19
+    ├── [2.9G]  file2
+    ├── [969M]  file20
+    ├── [170M]  file21
+    ├── [2.5G]  file22
+    ├── [3.3G]  file23
+    ├── [459M]  file24
+    ├── [969M]  file25
+    ├── [850M]  file26
+    ├── [748M]  file27
+    ├── [2.6G]  file3
+    ├── [833M]  file30
+    ├── [3.4G]  file4
+    ├── [1.6G]  file5
+    ├── [3.2G]  file6
+    ├── [1.9G]  file7
+    └── [2.1G]  file8
+
+8 directories, 32 files
+root@ip-172-31-3-110:~# tree -h .work_dir/
+.work_dir/
+├── [  14]  file1 -> /mnt/st1/file1
+├── [  15]  file10 -> /mnt/st1/file10
+├── [  15]  file11 -> /mnt/gp2/file11
+├── [  15]  file12 -> /mnt/st1/file12
+├── [  15]  file13 -> /mnt/st1/file13
+├── [  15]  file14 -> /mnt/st1/file14
+├── [  15]  file15 -> /mnt/gp2/file15
+├── [  15]  file16 -> /mnt/st1/file16
+├── [  15]  file17 -> /mnt/st1/file17
+├── [  15]  file18 -> /mnt/gp2/file18
+├── [  15]  file19 -> /mnt/st1/file19
+├── [  14]  file2 -> /mnt/st1/file2
+├── [  15]  file20 -> /mnt/st1/file20
+├── [  15]  file21 -> /mnt/st1/file21
+├── [  15]  file22 -> /mnt/st1/file22
+├── [  15]  file23 -> /mnt/st1/file23
+├── [  15]  file24 -> /mnt/st1/file24
+├── [  15]  file25 -> /mnt/st1/file25
+├── [  15]  file26 -> /mnt/st1/file26
+├── [  15]  file27 -> /mnt/st1/file27
+├── [  15]  file28 -> /mnt/io1/file28
+├── [  15]  file29 -> /mnt/gp2/file29
+├── [  14]  file3 -> /mnt/st1/file3
+├── [  15]  file30 -> /mnt/st1/file30
+├── [  14]  file4 -> /mnt/st1/file4
+├── [  14]  file5 -> /mnt/st1/file5
+├── [  14]  file6 -> /mnt/st1/file6
+├── [  14]  file7 -> /mnt/st1/file7
+├── [  14]  file8 -> /mnt/st1/file8
+├── [  14]  file9 -> /mnt/io1/file9
+├── [  18]  smallfile -> /mnt/sc1/smallfile
+└── [  17]  testfile -> /mnt/io1/testfile
+
+0 directories, 32 files
+root@ip-172-31-3-110:~# bash hybrid-storage-box/scripts/append_file.sh storage_box/smallfile 300
+Appending file storage_box/smallfile 300 times...
+Done.
+root@ip-172-31-3-110:~# tt
+/mnt/
+├── [4.0K]  gp2
+│   ├── [1.2G]  file11
+│   ├── [2.6G]  file15
+│   ├── [3.2G]  file18
+│   └── [2.1G]  file29
+├── [4.0K]  io1
+│   ├── [442M]  file28
+│   ├── [3.3G]  file9
+│   ├── [ 16K]  lost+found
+│   └── [500M]  testfile
+├── [4.0K]  jo
+├── [4.0K]  mg
+├── [4.0K]  sc1
+│   ├── [ 16K]  lost+found
+│   └── [4.0M]  smallfile
+└── [4.0K]  st1
+    ├── [663M]  file1
+    ├── [3.1G]  file10
+    ├── [2.2G]  file12
+    ├── [1.2G]  file13
+    ├── [3.0G]  file14
+    ├── [357M]  file16
+    ├── [2.8G]  file17
+    ├── [510M]  file19
+    ├── [2.9G]  file2
+    ├── [969M]  file20
+    ├── [170M]  file21
+    ├── [2.5G]  file22
+    ├── [3.3G]  file23
+    ├── [459M]  file24
+    ├── [969M]  file25
+    ├── [850M]  file26
+    ├── [748M]  file27
+    ├── [2.6G]  file3
+    ├── [833M]  file30
+    ├── [3.4G]  file4
+    ├── [1.6G]  file5
+    ├── [3.2G]  file6
+    ├── [1.9G]  file7
+    └── [2.1G]  file8
+
+8 directories, 32 files
+root@ip-172-31-3-110:~#
+
+
+postgres=# select * from file_meta order by access_count desc;
+               file_id                |     file_path      | file_size  |  create_time  | last_update_time | last_move_time | access_count | write_count | volume_info | file_tag
+--------------------------------------+--------------------+------------+---------------+------------------+----------------+--------------+-------------+-------------+----------
+ af997b7c-31ef-11e7-b7cf-02f18bb15c58 | /mnt/sc1/smallfile |    4201804 | 1494029117.11 | 1494029117.11    | 1494029117.11  |          302 |         302 | sc1         | tada!
+ 7f995942-3145-11e7-b7cf-02f18bb15c58 | /mnt/io1/testfile  |  524294750 | 1493956022.14 | 1493956022.14    | 1493956022.14  |          274 |         273 | io1         | tada!
+ d5d27eb2-3139-11e7-b7cf-02f18bb15c58 | /mnt/io1/file28    |  463477153 | 1493951012.83 | 1493951012.83    | 1493951012.83  |          268 |         267 | io1         | tada!
+ bffa4316-3136-11e7-b7cf-02f18bb15c58 | /mnt/io1/file9     | 3511684084 | 1493949687.69 | 1493949687.69    | 1493949687.69  |          257 |         257 | io1         | tada!
+ 1550a17e-3138-11e7-b7cf-02f18bb15c58 | /mnt/gp2/file15    | 2780826504 | 1493950260.36 | 1493950260.36    | 1493950260.36  |          248 |         248 | gp2         | tada!
+ dfe92c7a-3139-11e7-b7cf-02f18bb15c58 | /mnt/gp2/file29    | 2299529952 | 1493951029.76 | 1493951029.76    | 1493951029.76  |          234 |         234 | gp2         | tada!
+ 9c19bca4-3138-11e7-b7cf-02f18bb15c58 | /mnt/gp2/file18    | 3440380508 | 1493950486.5  | 1493950486.5     | 1493950486.5   |          221 |         221 | gp2         | tada!
+ 5d9f4a3a-3137-11e7-b7cf-02f18bb15c58 | /mnt/gp2/file11    | 1283459604 | 1493949952.18 | 1493949952.18    | 1493949952.18  |          217 |         217 | gp2         | tada!
+ 9c58e3ce-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file25    | 1016072556 | 1493950916.41 | 1493950916.41    | 1493950916.41  |          203 |         203 | st1         | tada!
+ 12640ad0-313a-11e7-b7cf-02f18bb15c58 | /mnt/st1/file30    |  873466112 | 1493951114.45 | 1493951114.45    | 1493951114.45  |          194 |         194 | st1         | tada!
+ c59b4cf4-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file27    |  784336948 | 1493950985.63 | 1493950985.63    | 1493950985.63  |          177 |         177 | st1         | tada!
+ ec7158ea-3135-11e7-b7cf-02f18bb15c58 | /mnt/st1/file5     | 1711278012 | 1493949332.8  | 1493949332.8     | 1493949332.8   |          167 |         167 | st1         | tada!
+ 0f88c5a8-3135-11e7-b7cf-02f18bb15c58 | /mnt/st1/file1     |  695207736 | 1493948962.17 | 1493948962.17    | 1493948962.17  |          156 |         156 | st1         | tada!
+ 1e804aae-3135-11e7-b7cf-02f18bb15c58 | /mnt/st1/file2     | 3101689632 | 1493948987.28 | 1493948987.28    | 1493948987.28  |          154 |         154 | st1         | tada!
+ f1a15380-3138-11e7-b7cf-02f18bb15c58 | /mnt/st1/file20    | 1016071860 | 1493950629.99 | 1493950629.99    | 1493950629.99  |          145 |         145 | st1         | tada!
+ 92525e8c-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file24    |  481298004 | 1493950899.59 | 1493950899.59    | 1493950899.59  |          137 |         137 | st1         | tada!
+ 14b6eef4-3137-11e7-b7cf-02f18bb15c58 | /mnt/st1/file10    | 3315598908 | 1493949829.86 | 1493949829.86    | 1493949829.86  |          135 |         135 | st1         | tada!
+ ce096e72-3137-11e7-b7cf-02f18bb15c58 | /mnt/st1/file14    | 3172992524 | 1493950140.78 | 1493950140.78    | 1493950140.78  |          131 |         131 | st1         | tada!
+ 471b0338-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file23    | 3529507980 | 1493950773.39 | 1493950773.39    | 1493950773.39  |           99 |          99 | st1         | tada!
+ 7a334110-3137-11e7-b7cf-02f18bb15c58 | /mnt/st1/file12    | 2353005576 | 1493950000.12 | 1493950000.12    | 1493950000.12  |           88 |          88 | st1         | tada!
+ ad789ca0-3137-11e7-b7cf-02f18bb15c58 | /mnt/st1/file13    | 1265632204 | 1493950086.14 | 1493950086.14    | 1493950086.14  |           83 |          83 | st1         | tada!
+ 08026a10-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file21    |  178258640 | 1493950667.54 | 1493950667.54    | 1493950667.54  |           62 |          62 | st1         | tada!
+ 0c6c60a6-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file22    | 2673869484 | 1493950674.94 | 1493950674.94    | 1493950674.94  |           59 |          59 | st1         | tada!
+ 588fbed4-3138-11e7-b7cf-02f18bb15c58 | /mnt/st1/file17    | 3030385276 | 1493950373.18 | 1493950373.18    | 1493950373.18  |           55 |          55 | st1         | tada!
+ b29071fc-3139-11e7-b7cf-02f18bb15c58 | /mnt/st1/file26    |  891290224 | 1493950953.68 | 1493950953.68    | 1493950953.68  |           54 |          54 | st1         | tada!
+ 6063ea02-3135-11e7-b7cf-02f18bb15c58 | /mnt/st1/file3     | 2798649788 | 1493949097.83 | 1493949097.83    | 1493949097.83  |           39 |          39 | st1         | tada!
+ 63cd3d0a-3136-11e7-b7cf-02f18bb15c58 | /mnt/st1/file7     | 2067792244 | 1493949533.05 | 1493949533.05    | 1493949533.05  |           33 |          33 | st1         | tada!
+ 9dc5e7e2-3135-11e7-b7cf-02f18bb15c58 | /mnt/st1/file4     | 3618636088 | 1493949200.81 | 1493949200.81    | 1493949200.81  |           28 |          28 | st1         | tada!
+ 1866bb2a-3136-11e7-b7cf-02f18bb15c58 | /mnt/st1/file6     | 3422552220 | 1493949406.55 | 1493949406.55    | 1493949406.55  |           15 |          15 | st1         | tada!
+ e5f7c532-3138-11e7-b7cf-02f18bb15c58 | /mnt/st1/file19    |  534773904 | 1493950610.42 | 1493950610.42    | 1493950610.42  |           14 |          14 | st1         | tada!
+ 9107a7e2-3136-11e7-b7cf-02f18bb15c58 | /mnt/st1/file8     | 2228224096 | 1493949608.93 | 1493949608.93    | 1493949608.93  |           10 |          10 | st1         | tada!
+ 5094af96-3138-11e7-b7cf-02f18bb15c58 | /mnt/st1/file16    |  374341716 | 1493950359.79 | 1493950359.79    | 1493950359.79  |            9 |           9 | st1         | tada!
+(32 rows)
+
+

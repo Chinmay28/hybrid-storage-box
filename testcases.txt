@@ -6,6 +6,7 @@ filling most of IO1 and GP2 in the order of their access counts visible in DB.
 
 Steps:
 a) Create a file of size 500M. It is created in default (slower, colder) disk.
+Script: scripts/mkfile.sh
 b) Record read IOPs using scripts/read_file.sh.
 c) Update access count using multiple appends high enough to match the hottest file.
 Script: scripts/append_file.sh
@@ -15,4 +16,19 @@ f) Record read IOPs and appreciate the difference.
 
 ---------------------------------------------------
 
-2. TBD
+2. A small file (<5M) should not be moved across disks (to SSDs especially),
+as it is likely to be written multiple times (like a config file or a source file.)
+------------------------------------------------------------------------------------
+Testbed:
+30 files in the range of 17M to 3.5G in size, spread across volumes,
+filling most of IO1 and GP2 in the order of their access counts visible in DB.
+
+Steps:
+a) Create a small file of size 4M. It resides in SC1/ST1 disk.
+Script: scripts/mkfile.sh
+b) Update access count using multiple appends high enough to match the hottest file.
+Script: scripts/append_file.sh
+c) Wait for sometime to make sure it doesn't move across disks.
+d) Optionally, we can can inspect DB entries as well to prove it.
+
+3. TBD

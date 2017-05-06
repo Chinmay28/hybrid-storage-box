@@ -134,7 +134,7 @@ class TravelAgent(object):
                 FileMeta.disk_to_path_map[new_disk_id])
 
     @staticmethod
-    def runDaemon(frequency=2):
+    def runDaemon(frequency=15):
 
         disk_list = ["io1", "gp2", "st1", "sc1"]
 
@@ -152,8 +152,8 @@ class TravelAgent(object):
                 status = TravelAgent.relocateFile(disk_list[disk_list.index(disk)-1], \
                     row[0], TravelAgent.getRelocationPath(row[0], disk, disk_list[disk_list.index(disk)-1]), row[2])
                 if status is None:
-                    main_logger.info("Daemon couldn't score! It will now take a nap (15s) and try again later!")
-                    time.sleep(15)
+                    main_logger.info("Daemon couldn't score! It will do some DB housekeeping now before continuing.")
+                    DBUtil().cleanupStaleEntries()
             else:
                 # continue if inner loop didn't break
                 continue

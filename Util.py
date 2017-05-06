@@ -9,6 +9,10 @@ import uuid
 
 
 class DBUtil(object):
+    """
+    Policy: do not move small files (<5MB), because they are likely to be written again and again,
+    like dev workloads and config files. Magnetic disks are the right place to keep them. 
+    """    
 
     def __init__(self):
         self.connnection = psycopg2.connect("dbname=postgres user=postgres password=test")
@@ -49,7 +53,7 @@ class DBUtil(object):
             cursor = self.connnection.cursor()
             cursor.execute("select file_id,volume_info,access_count,write_count,file_size,file_path from file_meta \
             where volume_info=\'" + disk_id + "\' and access_count < \'" + str(metric) + "\' \
-            and write_count < \'" + str(metric) + "\' order by access_count;")
+            and write_count < \'" + str(metric) + "\' and file_size>'5242880' order by access_count;")
             result = cursor.fetchall()
             cursor.close()
             self.connnection.commit()
@@ -58,7 +62,7 @@ class DBUtil(object):
     def getHotRow(self, disk_id=None):
         if disk_id:
             query = "select file_path,file_size,access_count,volume_info from file_meta \
-            where volume_info=\'"+disk_id+"\' order by access_count desc limit 1;"
+            where volume_info=\'"+disk_id+"\' and file_size>'5242880' order by access_count desc limit 1;"
             db_logger.info("getHotRow: "+query)
             cursor = self.connnection.cursor()
             cursor.execute(query)
@@ -68,7 +72,7 @@ class DBUtil(object):
             return result
 
     def updateFilePath(self, file_id, dst_path):
-         if file_id and dst_path:
+        if file_id and dst_path:
             query = "update file_meta set file_path=\'"+dst_path+"\',\
             volume_info=\'"+DiskUtil.getDiskId(dst_path)+"\' where file_id=\'"+file_id+"\';"
             db_logger.info(query)
@@ -76,7 +80,7 @@ class DBUtil(object):
             cursor.execute(query)
             cursor.close()
             self.connnection.commit()   
-         else:
+        else:
             db_logger.error(str(file_id) + dst_path)       
 
     def getFileId(self, src_path):
@@ -125,7 +129,16 @@ class DBUtil(object):
             cursor.close()
             self.connnection.commit()    
             
-
+    def cleanupStaleEntries(self):
+        query = "select file_path from file_meta limit 100;"
+        db_logger.info("cleanupStaleEntries: "+query)
+        cursor = self.connnection.cursor()
+        cursor.execute(query)
+        result = cursor.fetchall()
+        for row in result:
+            if not os.path.exists(row[0]):
+                self.removeStaleEntry(row[0])         
+            
     @staticmethod
     def writeToDB():
         #Write to DB only if any dictionary is not empty
