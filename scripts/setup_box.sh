@@ -13,7 +13,7 @@ do
     size+="M"
     echo "creating file$var of size $size..."   
  
-    bash mkfile /home/ubuntu/storage_box/file$var $size
+    bash mkfile.sh /home/ubuntu/storage_box/file$var $size
 done
 
 echo "providing random access counts(1-257) to each file..."

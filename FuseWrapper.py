@@ -18,6 +18,8 @@ import time
 from CacheStore import FileMeta
 from Relocator import TravelAgent
 from CacheStore import db_logger, main_logger
+import Config
+import argparse
 
 
 class FuseSystem(Operations):
@@ -270,7 +272,27 @@ def main(mountpoint, root):
 
 
 if __name__ == '__main__':
-    FileMeta.USER_DIRECTORY = os.path.realpath(sys.argv[1])
-    main(sys.argv[2], sys.argv[1])
+    
+    parser = argparse.ArgumentParser(description='HYBRID STORAGE BOX')
+    parser.add_argument('--src', action='store',
+                        default=Config.SYMLINK_DIRECTORY,
+                        help='The hidden source directory to store all the symlinks.')
+    
+    parser.add_argument('--dst', action='store',
+                    default=Config.FUSE_DIRECTORY,
+                    help='The working directory for the user.')
+
+    parser.add_argument('--relocate', action="store_true",
+                    help='Run relocator daemon.')
+        
+    args = parser.parse_args()
+    
+    FileMeta.USER_DIRECTORY = args.src
+    if args.relocate:
+        Config.RELOCATE = True
+    else:
+        Config.RELOCATE = False
+
+    main(args.dst, args.src)
 
  

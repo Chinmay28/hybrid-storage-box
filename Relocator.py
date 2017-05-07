@@ -8,6 +8,7 @@ import time
 import shutil
 import uuid
 from CacheStore import db_logger, main_logger
+import Config
 
 
 """ Only one instance of the class would be created 
@@ -141,23 +142,22 @@ class TravelAgent(object):
         while True:
             time.sleep(frequency)
             DBUtil.writeToDB();
-
-            #We will never move any thing from io1 in this daemon.
-            #Files will only move out of it during clean up
-            for disk in disk_list[1:]:
-                row = DBUtil().getHotRow(disk)
-                if not row:
+            
+            if Config.RELOCATE:
+                for disk in disk_list[1:]:
+                    row = DBUtil().getHotRow(disk)
+                    if not row:
+                        continue
+                    main_logger.info("Row to relocate: "+ str(row))
+                    status = TravelAgent.relocateFile(disk_list[disk_list.index(disk)-1], \
+                        row[0], TravelAgent.getRelocationPath(row[0], disk, disk_list[disk_list.index(disk)-1]), row[2])
+                    if status is None:
+                        main_logger.info("Daemon couldn't score! It will do some DB housekeeping now before continuing.")
+                        DBUtil().cleanupStaleEntries()
+                else:
+                    # continue if inner loop didn't break
                     continue
-                main_logger.info("Row to relocate: "+ str(row))
-                status = TravelAgent.relocateFile(disk_list[disk_list.index(disk)-1], \
-                    row[0], TravelAgent.getRelocationPath(row[0], disk, disk_list[disk_list.index(disk)-1]), row[2])
-                if status is None:
-                    main_logger.info("Daemon couldn't score! It will do some DB housekeeping now before continuing.")
-                    DBUtil().cleanupStaleEntries()
-            else:
-                # continue if inner loop didn't break
-                continue
-            break
+                break
 
 
 if __name__ == "__main__":

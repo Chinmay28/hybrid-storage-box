@@ -146,7 +146,7 @@ class DBUtil(object):
             db_logger.info("Updating counts in DB...")
             db_conn = DBUtil()
             #loop on all file locks
-            for path in FileMeta.path_to_uuid_map:
+            for path in list(FileMeta.path_to_uuid_map):
                 realpath = os.path.realpath(path)
                 file_id = FileMeta.path_to_uuid_map[realpath]
                 
