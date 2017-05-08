@@ -96,7 +96,7 @@ class TravelAgent(object):
 
     @staticmethod
     def cleanupDisk(disk_id, space_to_free, metric):
-        main_logger.info("cleanupDisk"+ disk_id+ str(space_to_free)+ str(metric))
+        main_logger.info("cleanupDisk, "+ disk_id+ ", " + str(space_to_free)+ ", "+ str(metric))
 
         for victim in TravelAgent.getVictimIter(disk_id, space_to_free, metric):
             main_logger.info("Victims: "+ str(victim))
