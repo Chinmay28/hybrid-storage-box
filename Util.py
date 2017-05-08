@@ -53,7 +53,7 @@ class DBUtil(object):
             cursor = self.connnection.cursor()
             cursor.execute("select file_id,volume_info,access_count,write_count,file_size,file_path from file_meta \
             where volume_info=\'" + disk_id + "\' and access_count < \'" + str(metric) + "\' \
-            and write_count < \'" + str(metric) + "\' and file_size>'5242880' order by access_count;")
+            and file_size>'5242880' order by access_count;")
             result = cursor.fetchall()
             cursor.close()
             self.connnection.commit()
