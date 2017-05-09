@@ -185,8 +185,8 @@ class DBUtil(object):
                     #write to DB
                     update_query = "update file_meta set access_count=\'" + \
                     str(FileMeta.access_count_map[file_id] + old_counts[0])+"\', write_count=\'" \
-                    + str(FileMeta.write_count_map[file_id] + old_counts[0])+"\', file_size=\'" + str(os.path.getsize(realpath)) + "\' \
-                    where file_id=\'" + str(file_id)+ "\';"
+                    + str(FileMeta.write_count_map[file_id] + old_counts[0])+"\', file_size=\'" + str(os.path.getsize(realpath)) + "\', \
+                    last_update_time=\'" + str(time.time()) +"\' where file_id=\'" + str(file_id)+ "\';"
                     db_logger.info("Executing: "+ update_query)
                     db_conn.insert(update_query)
 
