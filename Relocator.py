@@ -135,7 +135,7 @@ class TravelAgent(object):
                 FileMeta.disk_to_path_map[new_disk_id])
 
     @staticmethod
-    def runDaemon(frequency=15):
+    def runDaemon(frequency=5):
 
         disk_list = ["io1", "gp2", "st1", "sc1"]
 
@@ -154,6 +154,7 @@ class TravelAgent(object):
                     if status is None:
                         main_logger.info("Daemon couldn't score! It will do some DB housekeeping now before continuing.")
                         DBUtil().cleanupStaleEntries()
+                        DBUtil().resetCounts()
                 else:
                     # continue if inner loop didn't break
                     continue

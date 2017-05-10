@@ -52,8 +52,8 @@ class DBUtil(object):
         if disk_id and metric:
             cursor = self.connnection.cursor()
             cursor.execute("select file_id,volume_info,access_count,write_count,file_size,file_path from file_meta \
-            where volume_info=\'" + disk_id + "\' and access_count < \'" + str(metric) + "\' \
-            and file_size>'5242880' order by access_count;")
+            where volume_info=\'" + disk_id + "\' and write_count < \'" + str(metric) + "\' \
+            and file_size>'5242880' order by write_count;")
             result = cursor.fetchall()
             cursor.close()
             self.connnection.commit()
@@ -61,8 +61,8 @@ class DBUtil(object):
 
     def getHotRow(self, disk_id=None):
         if disk_id:
-            query = "select file_path,file_size,access_count,volume_info from file_meta \
-            where volume_info=\'"+disk_id+"\' and file_size>'5242880' order by access_count desc limit 1;"
+            query = "select file_path,file_size,write_count,volume_info from file_meta \
+            where volume_info=\'"+disk_id+"\' and file_size>'5242880' order by write_count desc limit 1;"
             db_logger.info("getHotRow: "+query)
             cursor = self.connnection.cursor()
             cursor.execute(query)
@@ -127,7 +127,16 @@ class DBUtil(object):
             cursor = self.connnection.cursor()
             cursor.execute(query)
             cursor.close()
-            self.connnection.commit()    
+            self.connnection.commit()
+            
+    def resetCounts(self):
+        curr_time = str(time.time() - 1800)
+        query = "update file_meta set write_count=\'0\' where last_update_time < \'"+curr_time+"\';"
+        db_logger.info(query)
+        cursor = self.connnection.cursor()
+        cursor.execute(query)
+        cursor.close()
+        self.connnection.commit()       
             
     def cleanupStaleEntries(self):
         query = "select file_path from file_meta limit 100;"
@@ -137,7 +146,7 @@ class DBUtil(object):
         result = cursor.fetchall()
         for row in result:
             if not os.path.exists(row[0]):
-                self.removeStaleEntry(row[0])         
+                self.removeStaleEntry(row[0])     
             
     @staticmethod
     def writeToDB():
@@ -185,8 +194,8 @@ class DBUtil(object):
                     #write to DB
                     update_query = "update file_meta set access_count=\'" + \
                     str(FileMeta.access_count_map[file_id] + old_counts[0])+"\', write_count=\'" \
-                    + str(FileMeta.write_count_map[file_id] + old_counts[0])+"\', file_size=\'" + str(os.path.getsize(realpath)) + "\' \
-                    where file_id=\'" + str(file_id)+ "\';"
+                    + str(FileMeta.write_count_map[file_id] + old_counts[0])+"\', file_size=\'" + str(os.path.getsize(realpath)) + "\', \
+                    last_update_time=\'" + str(time.time()) +"\' where file_id=\'" + str(file_id)+ "\';"
                     db_logger.info("Executing: "+ update_query)
                     db_conn.insert(update_query)
 

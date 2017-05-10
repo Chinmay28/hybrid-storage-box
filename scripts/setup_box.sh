@@ -4,10 +4,10 @@ START=$(date +%s)
 
 cd /home/ubuntu/hybrid-storage-box/scripts/
 
-echo "creating 30 files with size ranges 17M to 2G..."
+echo "creating 30 files with size ranges 17M to 1.3G..."
 for var in {1..30}
 do
-    random="$(shuf -i1-120 -n1)"
+    random="$(shuf -i1-80 -n1)"
     seed_size=17
     size=$(($random * $seed_size))
     size+="M"
